@@ -220,6 +220,7 @@ dverse-ai/
 3. Set the root directory to `frontend`
 4. Add environment variable: `NEXT_PUBLIC_API_URL=<your-backend-url>`
 5. Deploy
+6. (Opcional) Configura dominio personalizado y preview deployments según ramas.
 
 ### Backend (Railway)
 
