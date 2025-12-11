@@ -44,7 +44,7 @@ export default function EnvironmentsPage() {
                 `/environments/${id}/test`
             );
             alert(result.message);
-            await loadEnvironments(); // Reload to get updated status
+            await loadAll(); // Reload to get updated status
         } catch (error: any) {
             alert('Failed to test connection');
         } finally {
