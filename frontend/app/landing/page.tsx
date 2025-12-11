@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ApiClient } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n';
 import {
     MessageSquare,
     Zap,
@@ -24,12 +25,16 @@ import {
     BarChart3,
     History,
     Layers,
+    Globe,
 } from 'lucide-react';
 
 export default function LandingPage() {
     const router = useRouter();
+    const { t, lang, setLang } = useI18n();
     const [typedText, setTypedText] = useState('');
-    const fullText = 'What entities are related to Contact?';
+    const fullTextEs = '¿Qué entidades están relacionadas con Contact?';
+    const fullTextEn = 'What entities are related to Contact?';
+    const fullText = lang === 'es' ? fullTextEs : fullTextEn;
 
     useEffect(() => {
         // Redirect if already logged in
@@ -39,6 +44,7 @@ export default function LandingPage() {
         }
 
         // Typing animation
+        setTypedText('');
         let i = 0;
         const timer = setInterval(() => {
             if (i < fullText.length) {
@@ -50,28 +56,28 @@ export default function LandingPage() {
         }, 50);
 
         return () => clearInterval(timer);
-    }, [router]);
+    }, [router, lang, fullText]);
 
     const features = [
-        { icon: Search, title: 'Natural Language Queries', desc: 'Ask questions about your metadata in plain English or Spanish' },
-        { icon: Map, title: 'Dependency Mapping', desc: 'Understand relationships between entities, fields, and components' },
-        { icon: BarChart3, title: 'Impact Analysis', desc: 'Know what breaks before you make changes' },
-        { icon: FileText, title: 'Auto Documentation', desc: 'Generate technical docs from your actual configuration' },
-        { icon: History, title: 'Conversation History', desc: 'Track and revisit past queries and discoveries' },
-        { icon: Layers, title: 'Multi-Environment', desc: 'Connect and analyze multiple D365 instances' },
+        { icon: Search, title: t('landing_feature1'), desc: t('landing_feature1Desc') },
+        { icon: Map, title: t('landing_feature2'), desc: t('landing_feature2Desc') },
+        { icon: BarChart3, title: t('landing_feature3'), desc: t('landing_feature3Desc') },
+        { icon: FileText, title: t('landing_feature4'), desc: t('landing_feature4Desc') },
+        { icon: History, title: t('landing_feature5'), desc: t('landing_feature5Desc') },
+        { icon: Layers, title: t('landing_feature6'), desc: t('landing_feature6Desc') },
     ];
 
     const painPoints = [
-        { icon: Clock, text: 'Developers spend 30%+ of time understanding existing customizations' },
-        { icon: FileText, text: 'Documentation is always outdated or missing' },
-        { icon: Shield, text: 'Fear of breaking things when making changes' },
-        { icon: Users, text: 'Slow onboarding for new team members' },
+        { icon: Clock, text: t('landing_pain1') },
+        { icon: FileText, text: t('landing_pain2') },
+        { icon: Shield, text: t('landing_pain3') },
+        { icon: Users, text: t('landing_pain4') },
     ];
 
     const steps = [
-        { num: '01', title: 'Connect', desc: 'Link your Dynamics 365 environment in 5 minutes with Azure AD credentials' },
-        { num: '02', title: 'Ask', desc: 'Query your metadata in natural language - entities, fields, workflows, anything' },
-        { num: '03', title: 'Understand', desc: 'Get instant answers with context, dependencies, and actionable insights' },
+        { num: '01', title: t('landing_step1Title'), desc: t('landing_step1Desc') },
+        { num: '02', title: t('landing_step2Title'), desc: t('landing_step2Desc') },
+        { num: '03', title: t('landing_step3Title'), desc: t('landing_step3Desc') },
     ];
 
     return (
@@ -86,6 +92,23 @@ export default function LandingPage() {
                         <span className="text-xl font-bold text-[#1A1A1A]">DVerse<span className="text-[#FF6B47]">-ai</span></span>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Language Selector */}
+                        <div className="flex items-center gap-1 text-sm">
+                            <Globe className="w-4 h-4 text-[#666]" />
+                            <button
+                                onClick={() => setLang('es')}
+                                className={`px-2 py-1 rounded ${lang === 'es' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
+                            >
+                                ES
+                            </button>
+                            <span className="text-[#E5E5E5]">|</span>
+                            <button
+                                onClick={() => setLang('en')}
+                                className={`px-2 py-1 rounded ${lang === 'en' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
+                            >
+                                EN
+                            </button>
+                        </div>
                         <a
                             href="https://github.com/ezrcode/dverse-ai"
                             target="_blank"
@@ -99,13 +122,13 @@ export default function LandingPage() {
                             href="/login"
                             className="px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:text-[#FF6B47] transition-colors"
                         >
-                            Login
+                            {t('landing_login')}
                         </Link>
                         <Link
                             href="/register"
                             className="px-5 py-2.5 bg-[#FF6B47] text-white text-sm font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
                         >
-                            Start Free
+                            {t('landing_startFree')}
                         </Link>
                     </div>
                 </div>
@@ -118,18 +141,15 @@ export default function LandingPage() {
                         <div className="space-y-8">
                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B47]/10 rounded-full">
                                 <Sparkles className="w-4 h-4 text-[#FF6B47]" />
-                                <span className="text-sm font-medium text-[#FF6B47]">Open Source · MIT License</span>
+                                <span className="text-sm font-medium text-[#FF6B47]">{t('landing_openSource')}</span>
                             </div>
 
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1A1A1A] leading-tight">
-                                Understand Your{' '}
-                                <span className="text-[#FF6B47]">Dynamics 365</span>{' '}
-                                in Seconds, Not Hours
+                                {t('landing_headline')}
                             </h1>
 
                             <p className="text-lg text-[#666] leading-relaxed max-w-xl">
-                                AI-powered intelligence that reads your Dataverse metadata and answers your questions in natural language. 
-                                Like Cursor for code, but for your D365 configuration.
+                                {t('landing_subheadline')}
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4">
@@ -137,7 +157,7 @@ export default function LandingPage() {
                                     href="/register"
                                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B47] text-white font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
                                 >
-                                    Start Free Trial
+                                    {t('landing_startFree')}
                                     <ArrowRight className="w-5 h-5" />
                                 </Link>
                                 <a
@@ -147,12 +167,12 @@ export default function LandingPage() {
                                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white border border-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:border-[#FF6B47] hover:text-[#FF6B47] transition-colors"
                                 >
                                     <Github className="w-5 h-5" />
-                                    View on GitHub
+                                    {t('landing_viewGithub')}
                                 </a>
                             </div>
 
                             <p className="text-sm text-[#999]">
-                                No credit card required · Connect in under 5 minutes
+                                {t('landing_noCreditCard')}
                             </p>
                         </div>
 
@@ -221,9 +241,9 @@ export default function LandingPage() {
             <section className="py-20 px-6 bg-white border-y border-[#E5E5E5]">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">The Problem with Complex D365 Systems</h2>
+                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_problemTitle')}</h2>
                         <p className="text-[#666] max-w-2xl mx-auto">
-                            After years of customizations, your Dynamics 365 becomes a black box. Sound familiar?
+                            {t('landing_problemSubtitle')}
                         </p>
                     </div>
 
@@ -242,8 +262,8 @@ export default function LandingPage() {
             <section className="py-20 px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">How It Works</h2>
-                        <p className="text-[#666]">Get started in three simple steps</p>
+                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_howItWorks')}</h2>
+                        <p className="text-[#666]">{t('landing_howItWorksSubtitle')}</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
@@ -269,9 +289,9 @@ export default function LandingPage() {
             <section className="py-20 px-6 bg-white border-y border-[#E5E5E5]">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Key Features</h2>
+                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_featuresTitle')}</h2>
                         <p className="text-[#666] max-w-2xl mx-auto">
-                            Everything you need to understand and document your Dynamics 365 environment
+                            {t('landing_featuresSubtitle')}
                         </p>
                     </div>
 
@@ -293,63 +313,63 @@ export default function LandingPage() {
             <section className="py-20 px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Built for D365 Professionals</h2>
+                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_useCasesTitle')}</h2>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="bg-white rounded-xl p-8 border border-[#E5E5E5]">
                             <Code2 className="w-10 h-10 text-[#FF6B47] mb-4" />
-                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">For Developers</h3>
+                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">{t('landing_forDevs')}</h3>
                             <ul className="space-y-3">
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Onboard to new projects 10x faster
+                                    {t('landing_dev1')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Understand legacy customizations
+                                    {t('landing_dev2')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Find dependencies before changes
+                                    {t('landing_dev3')}
                                 </li>
                             </ul>
                         </div>
 
                         <div className="bg-white rounded-xl p-8 border border-[#E5E5E5]">
                             <Users className="w-10 h-10 text-[#FF6B47] mb-4" />
-                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">For Consultants</h3>
+                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">{t('landing_forConsultants')}</h3>
                             <ul className="space-y-3">
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Audit client instances instantly
+                                    {t('landing_consultant1')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Generate technical documentation
+                                    {t('landing_consultant2')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Analyze multiple environments
+                                    {t('landing_consultant3')}
                                 </li>
                             </ul>
                         </div>
 
                         <div className="bg-white rounded-xl p-8 border border-[#E5E5E5]">
                             <Shield className="w-10 h-10 text-[#FF6B47] mb-4" />
-                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">For Admins</h3>
+                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-4">{t('landing_forAdmins')}</h3>
                             <ul className="space-y-3">
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Know what breaks before you change
+                                    {t('landing_admin1')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Track all customizations
+                                    {t('landing_admin2')}
                                 </li>
                                 <li className="flex items-start gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47] flex-shrink-0 mt-0.5" />
-                                    Maintain system health
+                                    {t('landing_admin3')}
                                 </li>
                             </ul>
                         </div>
@@ -361,109 +381,109 @@ export default function LandingPage() {
             <section className="py-20 px-6 bg-white border-y border-[#E5E5E5]">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Simple, Transparent Pricing</h2>
-                        <p className="text-[#666]">Start free, upgrade when you need more</p>
+                        <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_pricingTitle')}</h2>
+                        <p className="text-[#666]">{t('landing_pricingSubtitle')}</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                         {/* Free */}
                         <div className="bg-[#FAFAFA] rounded-xl p-8 border border-[#E5E5E5]">
-                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">Free</h3>
+                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{t('landing_free')}</h3>
                             <div className="mb-6">
                                 <span className="text-4xl font-bold text-[#1A1A1A]">$0</span>
-                                <span className="text-[#666]">/month</span>
+                                <span className="text-[#666]">{t('landing_month')}</span>
                             </div>
                             <ul className="space-y-3 mb-8">
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    100 queries/month
+                                    100 {t('landing_queriesMonth')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    1 environment
+                                    1 {t('landing_environments')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    7-day history
+                                    7 {t('landing_history')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    BYOK (Bring Your Own Key)
+                                    {t('landing_byok')}
                                 </li>
                             </ul>
                             <Link
                                 href="/register"
                                 className="block text-center px-6 py-3 border border-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:border-[#FF6B47] hover:text-[#FF6B47] transition-colors"
                             >
-                                Get Started Free
+                                {t('landing_getStartedFree')}
                             </Link>
                         </div>
 
                         {/* Pro */}
                         <div className="bg-[#1A1A1A] rounded-xl p-8 border-2 border-[#FF6B47] relative">
                             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#FF6B47] text-white text-xs font-medium px-3 py-1 rounded-full">
-                                Most Popular
+                                {t('landing_mostPopular')}
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Pro</h3>
+                            <h3 className="text-xl font-bold text-white mb-2">{t('landing_pro')}</h3>
                             <div className="mb-6">
                                 <span className="text-4xl font-bold text-white">$9</span>
-                                <span className="text-white/60">/month</span>
+                                <span className="text-white/60">{t('landing_month')}</span>
                             </div>
                             <ul className="space-y-3 mb-8">
                                 <li className="flex items-center gap-2 text-white/80">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    1,000 queries/month
+                                    1,000 {t('landing_queriesMonth')}
                                 </li>
                                 <li className="flex items-center gap-2 text-white/80">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    5 environments
+                                    5 {t('landing_environments')}
                                 </li>
                                 <li className="flex items-center gap-2 text-white/80">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    Unlimited history
+                                    {t('landing_unlimited')} {t('landing_history')}
                                 </li>
                                 <li className="flex items-center gap-2 text-white/80">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    Export features
+                                    {t('landing_export')}
                                 </li>
                             </ul>
                             <Link
                                 href="/register"
                                 className="block text-center px-6 py-3 bg-[#FF6B47] text-white font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
                             >
-                                Start Pro Trial
+                                {t('landing_startProTrial')}
                             </Link>
                         </div>
 
                         {/* Enterprise */}
                         <div className="bg-[#FAFAFA] rounded-xl p-8 border border-[#E5E5E5]">
-                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">Enterprise</h3>
+                            <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{t('landing_enterprise')}</h3>
                             <div className="mb-6">
-                                <span className="text-4xl font-bold text-[#1A1A1A]">Custom</span>
+                                <span className="text-4xl font-bold text-[#1A1A1A]">{t('landing_custom')}</span>
                             </div>
                             <ul className="space-y-3 mb-8">
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    Unlimited queries
+                                    {t('landing_unlimited')} {t('landing_queriesMonth')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    Unlimited environments
+                                    {t('landing_unlimited')} {t('landing_environments')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    SSO + Priority Support
+                                    {t('landing_sso')}
                                 </li>
                                 <li className="flex items-center gap-2 text-[#666]">
                                     <Check className="w-5 h-5 text-[#FF6B47]" />
-                                    API Access
+                                    {t('landing_api')}
                                 </li>
                             </ul>
                             <a
                                 href="mailto:contact@ezrcode.com"
                                 className="block text-center px-6 py-3 border border-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:border-[#FF6B47] hover:text-[#FF6B47] transition-colors"
                             >
-                                Contact Us
+                                {t('landing_contactUs')}
                             </a>
                         </div>
                     </div>
@@ -473,8 +493,8 @@ export default function LandingPage() {
             {/* Tech Stack */}
             <section className="py-20 px-6">
                 <div className="max-w-7xl mx-auto text-center">
-                    <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">Built with Modern Tech</h2>
-                    <p className="text-[#666] mb-12">Open source and built on proven technologies</p>
+                    <h2 className="text-3xl font-bold text-[#1A1A1A] mb-4">{t('landing_techTitle')}</h2>
+                    <p className="text-[#666] mb-12">{t('landing_techSubtitle')}</p>
 
                     <div className="flex flex-wrap justify-center gap-6 mb-12">
                         {['Next.js', 'NestJS', 'PostgreSQL', 'Google Gemini', 'TypeScript', 'Tailwind CSS'].map((tech) => (
@@ -492,7 +512,7 @@ export default function LandingPage() {
                             className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm hover:bg-[#333] transition-colors"
                         >
                             <Github className="w-4 h-4" />
-                            Star on GitHub
+                            {t('landing_starOnGithub')}
                         </a>
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg text-sm text-[#666]">
                             MIT License
@@ -505,17 +525,17 @@ export default function LandingPage() {
             <section className="py-20 px-6 bg-[#1A1A1A]">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-                        Start Analyzing Your Dataverse Today
+                        {t('landing_finalCta')}
                     </h2>
                     <p className="text-white/60 text-lg mb-8">
-                        Connect your Dynamics 365 environment in under 5 minutes. No credit card required.
+                        {t('landing_finalCtaSubtitle')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
                             href="/register"
                             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#FF6B47] text-white font-medium rounded-lg hover:bg-[#E55A3A] transition-colors text-lg"
                         >
-                            Get Started Free
+                            {t('landing_getStartedFree')}
                             <ArrowRight className="w-5 h-5" />
                         </Link>
                     </div>

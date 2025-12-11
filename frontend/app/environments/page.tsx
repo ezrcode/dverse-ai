@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useI18n } from '@/lib/i18n';
 import type { Environment, Conversation } from '@/types';
 import { Database, Plus, Trash2, Edit, TestTube } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function EnvironmentsPage() {
     const router = useRouter();
+    const { t } = useI18n();
     const isAuthenticated = useRequireAuth();
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function EnvironmentsPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+        if (!confirm(`${t('env_confirmDelete')} "${name}"?`)) {
             return;
         }
 
@@ -70,11 +72,11 @@ export default function EnvironmentsPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'connected':
-                return <span className="badge-connected">Connected</span>;
+                return <span className="badge-connected">{t('env_connected')}</span>;
             case 'error':
-                return <span className="badge-disconnected">Error</span>;
+                return <span className="badge-disconnected">{t('env_error')}</span>;
             default:
-                return <span className="badge-info">Not Tested</span>;
+                return <span className="badge-info">{t('env_disconnected')}</span>;
         }
     };
 
@@ -87,7 +89,7 @@ export default function EnvironmentsPage() {
             <div className="flex h-screen">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
-                    <div className="text-text-secondary">Loading environments...</div>
+                    <div className="text-text-secondary">{t('env_loadingList')}</div>
                 </div>
             </div>
         );
@@ -101,15 +103,15 @@ export default function EnvironmentsPage() {
                 <div className="max-w-6xl mx-auto p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-text-primary">Environments</h1>
+                            <h1 className="text-3xl font-bold text-text-primary">{t('env_title')}</h1>
                             <p className="text-text-secondary mt-2">
-                                Manage your Dynamics 365 / Dataverse connections
+                                {t('env_subtitle')}
                             </p>
                         </div>
                         <Link href="/environments/new">
                             <Button variant="accent" className="gap-2">
                                 <Plus className="w-4 h-4" />
-                                Add Environment
+                                {t('env_addNew')}
                             </Button>
                         </Link>
                     </div>
@@ -119,13 +121,13 @@ export default function EnvironmentsPage() {
                             <CardContent>
                                 <Database className="w-16 h-16 text-text-muted mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold text-text-primary mb-2">
-                                    No environments yet
+                                    {t('env_noEnvs')}
                                 </h3>
                                 <p className="text-text-secondary mb-6">
-                                    Add your first Dynamics 365 environment to get started
+                                    {t('env_noEnvsDesc')}
                                 </p>
                                 <Link href="/environments/new">
-                                    <Button variant="primary">Add Environment</Button>
+                                    <Button variant="primary">{t('env_addFirst')}</Button>
                                 </Link>
                             </CardContent>
                         </Card>
@@ -170,7 +172,7 @@ export default function EnvironmentsPage() {
                                                 className="flex-1"
                                             >
                                                 <TestTube className="w-4 h-4 mr-2" />
-                                                {testingId === env.id ? 'Testing...' : 'Test'}
+                                                {testingId === env.id ? t('env_testing') : t('env_testConnection')}
                                             </Button>
                                             <Link href={`/environments/${env.id}/edit`}>
                                                 <Button variant="outline" size="sm">
