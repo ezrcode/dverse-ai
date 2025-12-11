@@ -10,6 +10,8 @@ async function bootstrap() {
     'http://localhost:3000',
     'https://dverse-ai.vercel.app',
     'https://dverse-ai-ezrcode.vercel.app',
+    'https://www.dverse-ai.info',
+    'https://dverse-ai.info',
     process.env.FRONTEND_URL,
   ].filter(Boolean);
 
