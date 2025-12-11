@@ -3,6 +3,8 @@
 import { Message } from '@/types';
 import { format } from 'date-fns';
 import { User, Bot } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MessageItemProps {
     message: Message;
@@ -38,8 +40,10 @@ export function MessageItem({ message, userProfilePhotoUrl }: MessageItemProps) 
                         ? 'bg-[#F0F0F0] text-[#1B1B1B]'
                         : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'
                     }`}>
-                    <div className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
+                    <div className="text-sm break-words prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-code:bg-[#F5F5F5] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[#FF6B35] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1A1A1A] prose-pre:text-white prose-pre:rounded-lg">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                        </ReactMarkdown>
                     </div>
                 </div>
                 <div className="text-xs text-[#999999] px-2">
