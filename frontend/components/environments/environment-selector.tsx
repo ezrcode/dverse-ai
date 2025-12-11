@@ -4,6 +4,7 @@ import { Environment } from '@/types';
 import { Check, ChevronsUpDown, Database } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 interface EnvironmentSelectorProps {
     environments: Environment[];
@@ -16,6 +17,7 @@ export function EnvironmentSelector({
     selectedId,
     onSelect,
 }: EnvironmentSelectorProps) {
+    const { t } = useI18n();
     const [open, setOpen] = useState(false);
     const selected = environments.find((env) => env.id === selectedId);
 
@@ -53,7 +55,7 @@ export function EnvironmentSelector({
                         </div>
                     ) : (
                         <span className="text-sm text-text-muted">
-                            Select an environment...
+                            {t('env_selectPlaceholder')}
                         </span>
                     )}
                 </div>
@@ -69,9 +71,9 @@ export function EnvironmentSelector({
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-border rounded-md shadow-lg z-20 max-h-[300px] overflow-y-auto">
                         {environments.length === 0 ? (
                             <div className="p-4 text-center text-sm text-text-muted">
-                                No environments configured.{' '}
+                                {t('env_noConfigured')}{' '}
                                 <a href="/environments/new" className="text-primary hover:text-primary-hover font-medium">
-                                    Add one
+                                    {t('env_addFirst')}
                                 </a>
                             </div>
                         ) : (

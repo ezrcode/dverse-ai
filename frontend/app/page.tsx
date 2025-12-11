@@ -8,11 +8,13 @@ import { PromptInput } from '@/components/chat/prompt-input';
 import { EnvironmentSelector } from '@/components/environments/environment-selector';
 import { ApiClient } from '@/lib/api';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useI18n } from '@/lib/i18n';
 import type { Environment, Conversation, Message, SendMessageData, ChatResponse, User } from '@/types';
 
 export default function HomePage() {
   const router = useRouter();
   const isAuthenticated = useRequireAuth();
+  const { t } = useI18n();
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
@@ -52,7 +54,7 @@ export default function HomePage() {
 
   const handleSendMessage = async (message: string) => {
     if (!selectedEnvironmentId) {
-      alert('Please select an environment first');
+      alert(t('chat_selectEnvFirst'));
       return;
     }
 
@@ -112,7 +114,7 @@ export default function HomePage() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-6xl animate-pulse">🔮</div>
-          <div className="text-text-secondary">Loading DVerse-ai...</div>
+          <div className="text-text-secondary">{t('chat_loading')}</div>
         </div>
       </div>
     );
@@ -133,9 +135,9 @@ export default function HomePage() {
             />
             {environments.length === 0 && (
               <div className="mt-3 text-sm text-text-secondary text-center">
-                No environments configured.{' '}
+                {t('env_noConfigured')}{' '}
                 <a href="/environments/new" className="text-primary hover:text-primary-hover font-medium">
-                  Configure your first environment
+                  {t('env_configureFirst')}
                 </a>
               </div>
             )}

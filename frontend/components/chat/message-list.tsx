@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Message } from '@/types';
 import { MessageItem } from './message-item';
 import { Loader2 } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 interface MessageListProps {
     messages: Message[];
@@ -13,6 +14,7 @@ interface MessageListProps {
 
 export function MessageList({ messages, loading, userProfilePhotoUrl }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { t } = useI18n();
 
     // Scroll to bottom when messages change or loading state changes
     useEffect(() => {
@@ -26,10 +28,10 @@ export function MessageList({ messages, loading, userProfilePhotoUrl }: MessageL
                     <div className="text-center space-y-4 max-w-md">
                         <div className="text-6xl">🔮</div>
                         <h2 className="text-2xl font-semibold text-text-primary">
-                            Welcome to DVerse-ai
+                            {t('chat_emptyTitle')}
                         </h2>
                         <p className="text-text-secondary">
-                            Select a Dynamics 365 environment and start asking questions about your Dataverse metadata
+                            {t('chat_emptySubtitle')}
                         </p>
                     </div>
                 </div>
