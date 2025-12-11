@@ -16,6 +16,11 @@ export default function ConversationPage() {
     const params = useParams();
     const conversationId = params.id as string;
     const isAuthenticated = useRequireAuth();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+    const toAbsolute = (url: string | null) => {
+        if (!url) return null;
+        return url.startsWith('http') ? url : `${API_URL}${url}`;
+    };
 
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -44,7 +49,8 @@ export default function ConversationPage() {
             setConversations(convsData);
             setCurrentConversation(convData);
             setMessages(convData.messages || []);
-            setProfile(profileData);
+            const absPhoto = toAbsolute(profileData.profilePhotoUrl || null);
+            setProfile({ ...profileData, profilePhotoUrl: absPhoto });
 
             // Set the environment from the conversation
             if (convData.environmentId) {

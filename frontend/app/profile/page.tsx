@@ -13,6 +13,11 @@ import { User as UserIcon, Globe, Upload } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export default function ProfilePage() {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+    const toAbsolute = (url: string | null) => {
+        if (!url) return null;
+        return url.startsWith('http') ? url : `${API_URL}${url}`;
+    };
     const router = useRouter();
     const isAuthenticated = useRequireAuth();
     const { t, lang, setLang } = useI18n();
@@ -36,10 +41,11 @@ export default function ProfilePage() {
                 ApiClient.get<User>('/auth/profile'),
                 ApiClient.get<Conversation[]>('/conversations'),
             ]);
-            setUser(profile);
+            const absPhoto = toAbsolute(profile.profilePhotoUrl || null);
+            setUser({ ...profile, profilePhotoUrl: absPhoto });
             setName(profile.name || '');
             setLanguage((profile.language as 'es' | 'en') || 'es');
-            setPhotoUrl(profile.profilePhotoUrl || null);
+            setPhotoUrl(absPhoto);
             setConversations(convs);
         } catch (error: any) {
             if (error.statusCode === 401) {
@@ -58,7 +64,8 @@ export default function ProfilePage() {
 
         try {
             const resp = await ApiClient.post<{ url: string }>('/auth/profile/photo', formData);
-            setPhotoUrl(resp.url);
+            const absUrl = toAbsolute(resp.url);
+            setPhotoUrl(absUrl);
             setPreview(URL.createObjectURL(file));
         } catch (error: any) {
             setMessage({ type: 'error', text: error.message || 'No se pudo subir la foto' });
@@ -74,9 +81,10 @@ export default function ProfilePage() {
                 profilePhotoUrl: photoUrl,
                 language,
             });
-            setUser(updated);
+            const absPhoto = toAbsolute(updated.profilePhotoUrl || null);
+            setUser({ ...updated, profilePhotoUrl: absPhoto });
             // Sync local state with saved values
-            setPhotoUrl(updated.profilePhotoUrl || null);
+            setPhotoUrl(absPhoto);
             setPreview(null); // Clear preview, use saved URL
             setMessage({ type: 'success', text: 'Perfil actualizado' });
         } catch (error: any) {

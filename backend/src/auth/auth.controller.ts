@@ -128,8 +128,8 @@ export class AuthController {
         FileInterceptor('file', {
             storage: diskStorage({
                 destination: (_req, _file, cb) => {
-                    // Go up from backend to project root, then into frontend/public/uploads
-                    const dest = path.join(process.cwd(), '..', 'frontend', 'public', 'uploads');
+                    // Store uploads inside backend/uploads to serve statically
+                    const dest = path.join(process.cwd(), 'uploads');
                     if (!fs.existsSync(dest)) {
                         fs.mkdirSync(dest, { recursive: true });
                     }
@@ -143,11 +143,12 @@ export class AuthController {
             }),
         }),
     )
-    async uploadProfilePhoto(@UploadedFile() file: any) {
+    async uploadProfilePhoto(@UploadedFile() file: any, @Request() req) {
         if (!file) {
             throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
         }
-        return { url: `/uploads/${file.filename}` };
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        return { url: `${baseUrl}/uploads/${file.filename}` };
     }
 
     @UseGuards(JwtAuthGuard)

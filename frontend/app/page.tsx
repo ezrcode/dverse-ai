@@ -15,6 +15,11 @@ export default function HomePage() {
   const router = useRouter();
   const isAuthenticated = useRequireAuth();
   const { t } = useI18n();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+  const toAbsolute = (url: string | null) => {
+    if (!url) return null;
+    return url.startsWith('http') ? url : `${API_URL}${url}`;
+  };
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
@@ -37,7 +42,8 @@ export default function HomePage() {
       ]);
       setEnvironments(envsData);
       setConversations(convsData);
-      setProfile(profileData);
+      const absPhoto = toAbsolute(profileData.profilePhotoUrl || null);
+      setProfile({ ...profileData, profilePhotoUrl: absPhoto });
 
       // Auto-select first environment if available
       if (envsData.length > 0 && !selectedEnvironmentId) {
