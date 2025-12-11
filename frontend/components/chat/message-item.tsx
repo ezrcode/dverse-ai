@@ -1,0 +1,51 @@
+'use client';
+
+import { Message } from '@/types';
+import { format } from 'date-fns';
+import { User, Bot } from 'lucide-react';
+
+interface MessageItemProps {
+    message: Message;
+    userProfilePhotoUrl?: string | null;
+}
+
+export function MessageItem({ message, userProfilePhotoUrl }: MessageItemProps) {
+    const isUser = message.role === 'user';
+
+    return (
+        <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-6`}>
+            {/* Avatar */}
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${isUser ? 'bg-[#E5E5E5]' : 'bg-[#FF6B35]'
+                }`}>
+                {isUser ? (
+                    userProfilePhotoUrl ? (
+                        <img
+                            src={userProfilePhotoUrl}
+                            alt="User"
+                            className="object-cover w-10 h-10"
+                        />
+                    ) : (
+                        <User className="w-5 h-5 text-[#1B1B1B]" />
+                    )
+                ) : (
+                    <Bot className="w-5 h-5 text-white" />
+                )}
+            </div>
+
+            {/* Message Content */}
+            <div className={`flex-1 max-w-[70%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
+                <div className={`rounded-lg px-4 py-3 shadow-sm ${isUser
+                        ? 'bg-[#F0F0F0] text-[#1B1B1B]'
+                        : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'
+                    }`}>
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                        {message.content}
+                    </div>
+                </div>
+                <div className="text-xs text-[#999999] px-2">
+                    {format(new Date(message.createdAt), 'h:mm a')}
+                </div>
+            </div>
+        </div>
+    );
+}
