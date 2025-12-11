@@ -54,11 +54,12 @@ export class ChatService {
         // Authenticate with D365
         const accessToken = await this.dataverseService.authenticate(environment);
 
-        // Fetch relevant metadata
+        // Fetch relevant metadata (pass environment for Flow API access)
         const metadataResult = await this.dataverseService.fetchMetadata(
             accessToken,
             environment.organizationUrl,
             message,
+            environment,
         );
 
         // Log for debugging

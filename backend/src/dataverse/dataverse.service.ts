@@ -60,6 +60,38 @@ export class DataverseService {
     }
 
     /**
+     * Authenticate with Power Platform/Flow API
+     */
+    async authenticateFlowApi(environment: Environment): Promise<string | null> {
+        try {
+            const clientSecret = this.encryptionService.decrypt(
+                environment.clientSecret,
+            );
+
+            const tokenUrl = `https://login.microsoftonline.com/${environment.tenantId}/oauth2/v2.0/token`;
+
+            // Use the Flow service scope
+            const params = new URLSearchParams({
+                client_id: environment.clientId,
+                client_secret: clientSecret,
+                scope: 'https://service.flow.microsoft.com/.default',
+                grant_type: 'client_credentials',
+            });
+
+            const response = await axios.post<TokenResponse>(tokenUrl, params, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+
+            return response.data.access_token;
+        } catch (error) {
+            console.error('Flow API Authentication Error:', error.response?.data || error.message);
+            return null; // Return null instead of throwing - Flow API access is optional
+        }
+    }
+
+    /**
      * Test connection to D365 environment
      */
     async testConnection(environment: Environment): Promise<boolean> {
@@ -94,6 +126,7 @@ export class DataverseService {
         accessToken: string,
         organizationUrl: string,
         query: string,
+        environment?: Environment,
     ): Promise<MetadataResult> {
         try {
             // Fetch all entity definitions
@@ -248,7 +281,7 @@ export class DataverseService {
                 let workflows: any[] = [];
                 
                 if (asksForPowerAutomate) {
-                    // Fetch specifically Power Automate flows (categories 1, 5, 6)
+                    // Fetch specifically Power Automate flows (categories 1, 5, 6) from Dataverse
                     workflows = await this.fetchPowerAutomateFlows(accessToken, organizationUrl);
                     
                     // Also fetch all workflows to check for any with Power Automate characteristics
@@ -270,15 +303,39 @@ export class DataverseService {
                                 Type: wf.Category,
                                 CreatedOn: wf.CreatedOn,
                                 ModifiedOn: wf.ModifiedOn,
+                                Source: 'Dataverse',
                             });
                         }
                     });
                     
-                    const activeFlows = workflows.filter((f: any) => f.State === 'On' || f.State === 'Active').length;
+                    // Try to fetch from Flow API as well (for non-solution flows)
+                    let flowApiFlows: any[] = [];
+                    let flowApiNote = '';
+                    if (environment) {
+                        flowApiFlows = await this.fetchFlowsFromFlowApi(environment);
+                        if (flowApiFlows.length > 0) {
+                            // Add Flow API flows, avoiding duplicates
+                            const existingNames = new Set(workflows.map((f: any) => f.Name?.toLowerCase()));
+                            flowApiFlows.forEach((flow: any) => {
+                                if (!existingNames.has(flow.Name?.toLowerCase())) {
+                                    workflows.push(flow);
+                                }
+                            });
+                            flowApiNote = ` Additionally found ${flowApiFlows.length} flows from Power Automate API.`;
+                        }
+                    }
                     
-                    let summary = `Found ${workflows.length} Power Automate/Cloud Flows in Dataverse (${activeFlows} active). `;
+                    const activeFlows = workflows.filter((f: any) => 
+                        f.State === 'On' || f.State === 'Active' || f.State === 'Started'
+                    ).length;
+                    
+                    let summary = `Found ${workflows.length} Power Automate/Cloud Flows total (${activeFlows} active).${flowApiNote}`;
                     if (workflows.length === 0) {
-                        summary += 'Note: Only solution-aware flows are visible in Dataverse. Non-solution flows must be viewed in Power Automate portal (flow.microsoft.com).';
+                        summary = 'No Power Automate Cloud Flows found. ';
+                        if (!environment) {
+                            summary += 'Note: Only solution-aware flows are visible in Dataverse. ';
+                        }
+                        summary += 'Non-solution flows can be viewed in Power Automate portal (flow.microsoft.com). Make sure your App Registration has Flow.Read.All permissions for full access.';
                     }
                     
                     return {
@@ -709,6 +766,115 @@ export class DataverseService {
             });
         } catch (error) {
             console.error('Power Automate Flows Fetch Error:', error.response?.data || error.message);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch flows from Power Platform Flow API (for non-solution flows)
+     * Requires Flow API permissions on the app registration
+     */
+    async fetchFlowsFromFlowApi(
+        environment: Environment,
+    ): Promise<any[]> {
+        try {
+            const flowToken = await this.authenticateFlowApi(environment);
+            if (!flowToken) {
+                console.log('Flow API authentication failed - skipping Flow API');
+                return [];
+            }
+
+            // First, get the environment ID from the org URL
+            // The environment ID can be extracted from the org URL or we need to list environments
+            // Try to extract from org URL pattern: https://orgname.crm.dynamics.com -> need environment ID
+            
+            // List environments to find the matching one
+            const envsResponse = await axios.get(
+                'https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments?api-version=2016-11-01',
+                {
+                    headers: {
+                        Authorization: `Bearer ${flowToken}`,
+                        Accept: 'application/json',
+                    },
+                },
+            );
+
+            const environments = envsResponse.data?.value || [];
+            console.log(`Found ${environments.length} Power Platform environments`);
+
+            // Try to find the matching environment by checking instance URL
+            let matchingEnvId: string | null = null;
+            const orgUrlLower = environment.organizationUrl.toLowerCase();
+            
+            for (const env of environments) {
+                const linkedEnvUrl = env.properties?.linkedEnvironmentMetadata?.instanceUrl?.toLowerCase();
+                if (linkedEnvUrl && orgUrlLower.includes(linkedEnvUrl.replace('https://', '').replace('/', ''))) {
+                    matchingEnvId = env.name;
+                    break;
+                }
+                // Also check by org name in URL
+                const orgName = orgUrlLower.replace('https://', '').split('.')[0];
+                if (env.properties?.displayName?.toLowerCase().includes(orgName)) {
+                    matchingEnvId = env.name;
+                    break;
+                }
+            }
+
+            if (!matchingEnvId && environments.length > 0) {
+                // If we can't find a match, use the default environment
+                const defaultEnv = environments.find((e: any) => e.properties?.isDefault);
+                matchingEnvId = defaultEnv?.name || environments[0]?.name;
+            }
+
+            if (!matchingEnvId) {
+                console.log('Could not determine Power Platform environment ID');
+                return [];
+            }
+
+            console.log(`Using Power Platform environment: ${matchingEnvId}`);
+
+            // Fetch flows from this environment
+            const flowsResponse = await axios.get(
+                `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/${matchingEnvId}/flows?api-version=2016-11-01`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${flowToken}`,
+                        Accept: 'application/json',
+                    },
+                },
+            );
+
+            const flows = flowsResponse.data?.value || [];
+            console.log(`Found ${flows.length} flows from Flow API`);
+
+            return flows.map((flow: any) => ({
+                FlowId: flow.name,
+                Name: flow.properties?.displayName || flow.name,
+                Description: flow.properties?.description,
+                State: flow.properties?.state,
+                CreatedOn: flow.properties?.createdTime,
+                ModifiedOn: flow.properties?.lastModifiedTime,
+                Type: 'Power Automate Cloud Flow',
+                Source: 'Flow API',
+                Triggers: flow.properties?.definition?.triggers 
+                    ? Object.entries(flow.properties.definition.triggers).map(([name, trigger]: [string, any]) => ({
+                        Name: name,
+                        Type: trigger.type,
+                        Kind: trigger.kind,
+                    }))
+                    : [],
+                ActionCount: flow.properties?.definition?.actions 
+                    ? Object.keys(flow.properties.definition.actions).length 
+                    : 0,
+                Connections: flow.properties?.connectionReferences
+                    ? Object.entries(flow.properties.connectionReferences).map(([key, conn]: [string, any]) => ({
+                        Name: key,
+                        Api: conn.api?.name,
+                    }))
+                    : [],
+            }));
+        } catch (error) {
+            console.error('Flow API Fetch Error:', error.response?.data || error.message);
             return [];
         }
     }
