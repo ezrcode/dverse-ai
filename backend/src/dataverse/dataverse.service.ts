@@ -248,12 +248,43 @@ export class DataverseService {
                 let workflows: any[] = [];
                 
                 if (asksForPowerAutomate) {
-                    // Fetch specifically Power Automate flows
+                    // Fetch specifically Power Automate flows (categories 1, 5, 6)
                     workflows = await this.fetchPowerAutomateFlows(accessToken, organizationUrl);
+                    
+                    // Also fetch all workflows to check for any with Power Automate characteristics
+                    const allWorkflows = await this.fetchWorkflows(accessToken, organizationUrl);
+                    const powerAutomateFromAll = allWorkflows.filter((wf: any) => 
+                        wf.CategoryCode === 1 || wf.CategoryCode === 5 || wf.CategoryCode === 6
+                    );
+                    
+                    // Merge and dedupe
+                    const allFlowIds = new Set(workflows.map((f: any) => f.FlowId));
+                    powerAutomateFromAll.forEach((wf: any) => {
+                        if (!allFlowIds.has(wf.WorkflowId)) {
+                            workflows.push({
+                                FlowId: wf.WorkflowId,
+                                Name: wf.Name,
+                                Description: wf.Description,
+                                PrimaryEntity: wf.PrimaryEntity,
+                                State: wf.State,
+                                Type: wf.Category,
+                                CreatedOn: wf.CreatedOn,
+                                ModifiedOn: wf.ModifiedOn,
+                            });
+                        }
+                    });
+                    
+                    const activeFlows = workflows.filter((f: any) => f.State === 'On' || f.State === 'Active').length;
+                    
+                    let summary = `Found ${workflows.length} Power Automate/Cloud Flows in Dataverse (${activeFlows} active). `;
+                    if (workflows.length === 0) {
+                        summary += 'Note: Only solution-aware flows are visible in Dataverse. Non-solution flows must be viewed in Power Automate portal (flow.microsoft.com).';
+                    }
+                    
                     return {
                         entities: [],
                         workflows: workflows.slice(0, 50),
-                        summary: `Found ${workflows.length} Power Automate Cloud Flows in the environment (showing first 50).`,
+                        summary,
                     };
                 } else {
                     // Fetch all workflow types
@@ -596,14 +627,16 @@ export class DataverseService {
 
     /**
      * Fetch Power Automate Cloud Flows specifically
+     * Includes category 1 (Flow/Power Automate), 5 (Modern Flow), and 6 (Desktop Flow)
      */
     async fetchPowerAutomateFlows(
         accessToken: string,
         organizationUrl: string,
     ): Promise<any[]> {
         try {
-            // Power Automate flows are stored as workflows with category = 5
-            const url = `${organizationUrl}/api/data/v9.2/workflows?$filter=category eq 5&$select=workflowid,name,description,primaryentity,statecode,createdon,modifiedon,clientdata`;
+            // Power Automate flows can be stored with category 1, 5, or 6
+            // category 1 = Flow, category 5 = Modern Flow, category 6 = Desktop Flow
+            const url = `${organizationUrl}/api/data/v9.2/workflows?$filter=(category eq 1 or category eq 5 or category eq 6)&$select=workflowid,name,description,primaryentity,category,statecode,createdon,modifiedon,clientdata`;
 
             const response = await axios.get(url, {
                 headers: {
@@ -615,15 +648,19 @@ export class DataverseService {
             });
 
             return response.data.value.map((flow: any) => {
+                const flowType = flow.category === 6 ? 'Desktop Flow' : 
+                                 flow.category === 5 ? 'Modern Cloud Flow' : 
+                                 'Power Automate Cloud Flow';
                 const result: any = {
                     FlowId: flow.workflowid,
                     Name: flow.name,
                     Description: flow.description,
                     PrimaryEntity: flow.primaryentity || 'None (Global)',
+                    Category: flow.category,
                     State: flow.statecode === 1 ? 'On' : 'Off',
                     CreatedOn: flow.createdon,
                     ModifiedOn: flow.modifiedon,
-                    Type: 'Power Automate Cloud Flow',
+                    Type: flowType,
                 };
 
                 // Parse clientdata for flow definition details
