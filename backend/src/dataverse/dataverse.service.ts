@@ -134,9 +134,10 @@ export class DataverseService {
             // Detect what type of metadata the user is asking for
             const asksForForms = /formulario|form|forms/i.test(query);
             const asksForViews = /vista|view|views|grid|lista/i.test(query);
-            const asksForWorkflows = /workflow|flujo|proceso|automatizaci/i.test(query);
+            const asksForWorkflows = /workflow|flujo|proceso|automatizaci|power\s*automate|cloud\s*flow|flow|business\s*rule|regla\s*de\s*negocio|bpf|business\s*process/i.test(query);
+            const asksForPowerAutomate = /power\s*automate|cloud\s*flow|modern\s*flow/i.test(query);
 
-            console.log('User asks for - Forms:', asksForForms, 'Views:', asksForViews, 'Workflows:', asksForWorkflows);
+            console.log('User asks for - Forms:', asksForForms, 'Views:', asksForViews, 'Workflows:', asksForWorkflows, 'PowerAutomate:', asksForPowerAutomate);
 
             if (mentionedEntities.length > 0 && mentionedEntities.length <= 5) {
                 // Fetch data for mentioned entities (max 5 to avoid too many requests)
@@ -242,14 +243,38 @@ export class DataverseService {
                 };
             }
 
-            // If user asks for workflows globally (without specific entity)
+            // If user asks for workflows/Power Automate globally (without specific entity)
             if (asksForWorkflows && mentionedEntities.length === 0) {
-                const workflows = await this.fetchWorkflows(accessToken, organizationUrl);
-                return {
-                    entities: [],
-                    workflows: workflows.slice(0, 50), // Limit to 50
-                    summary: `Found ${workflows.length} workflows in the environment (showing first 50).`,
-                };
+                let workflows: any[] = [];
+                
+                if (asksForPowerAutomate) {
+                    // Fetch specifically Power Automate flows
+                    workflows = await this.fetchPowerAutomateFlows(accessToken, organizationUrl);
+                    return {
+                        entities: [],
+                        workflows: workflows.slice(0, 50),
+                        summary: `Found ${workflows.length} Power Automate Cloud Flows in the environment (showing first 50).`,
+                    };
+                } else {
+                    // Fetch all workflow types
+                    workflows = await this.fetchWorkflows(accessToken, organizationUrl);
+                    
+                    // Group by category for better summary
+                    const byCategory = workflows.reduce((acc: Record<string, number>, wf: any) => {
+                        acc[wf.Category] = (acc[wf.Category] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    const categoryBreakdown = Object.entries(byCategory)
+                        .map(([cat, count]) => `${count} ${cat}`)
+                        .join(', ');
+                    
+                    return {
+                        entities: [],
+                        workflows: workflows.slice(0, 50),
+                        summary: `Found ${workflows.length} workflows/flows in the environment: ${categoryBreakdown}. (showing first 50)`,
+                    };
+                }
             }
 
             // If no specific entities mentioned or too many, return basic entity list
@@ -486,6 +511,8 @@ export class DataverseService {
 
     /**
      * Fetch workflows for a specific entity or all workflows
+     * Includes: Classic Workflows (0), Business Rules (2), Actions (3), 
+     * Business Process Flows (4), Power Automate/Cloud Flows (5), Desktop Flows (6)
      */
     async fetchWorkflows(
         accessToken: string,
@@ -493,10 +520,11 @@ export class DataverseService {
         entityLogicalName?: string,
     ): Promise<any[]> {
         try {
-            let url = `${organizationUrl}/api/data/v9.2/workflows?$filter=category eq 0`; // category 0 = Workflow
+            // Fetch all workflow categories (0=Workflow, 2=BusinessRule, 3=Action, 4=BPF, 5=PowerAutomate, 6=DesktopFlow)
+            let url = `${organizationUrl}/api/data/v9.2/workflows?$select=workflowid,name,description,primaryentity,category,type,statecode,mode,scope,triggeroncreate,triggeronupdateattributelist,triggerondelete,createdon,modifiedon,clientdata`;
             
             if (entityLogicalName) {
-                url += ` and primaryentity eq '${entityLogicalName}'`;
+                url += `&$filter=primaryentity eq '${entityLogicalName}'`;
             }
 
             const workflowsResponse = await axios.get(url, {
@@ -508,22 +536,142 @@ export class DataverseService {
                 },
             });
 
-            return workflowsResponse.data.value.map((wf: any) => ({
-                WorkflowId: wf.workflowid,
-                Name: wf.name,
-                Description: wf.description,
-                PrimaryEntity: wf.primaryentity,
-                Category: this.getWorkflowCategoryName(wf.category),
-                Type: this.getWorkflowTypeName(wf.type),
-                State: wf.statecode === 1 ? 'Active' : 'Inactive',
-                Mode: wf.mode === 0 ? 'Background' : 'Real-time',
-                Scope: this.getWorkflowScopeName(wf.scope),
-                TriggerOnCreate: wf.triggeroncreate,
-                TriggerOnUpdate: wf.triggeronupdateattributelist ? true : false,
-                TriggerOnDelete: wf.triggerondelete,
-            }));
+            return workflowsResponse.data.value.map((wf: any) => {
+                const result: any = {
+                    WorkflowId: wf.workflowid,
+                    Name: wf.name,
+                    Description: wf.description,
+                    PrimaryEntity: wf.primaryentity || 'None (Global)',
+                    Category: this.getWorkflowCategoryName(wf.category),
+                    CategoryCode: wf.category,
+                    Type: this.getWorkflowTypeName(wf.type),
+                    State: wf.statecode === 1 ? 'Active' : 'Inactive',
+                    Mode: wf.mode === 0 ? 'Background' : 'Real-time',
+                    Scope: this.getWorkflowScopeName(wf.scope),
+                    CreatedOn: wf.createdon,
+                    ModifiedOn: wf.modifiedon,
+                };
+
+                // Add trigger info for classic workflows and Power Automate
+                if (wf.category === 0 || wf.category === 5) {
+                    result.TriggerOnCreate = wf.triggeroncreate;
+                    result.TriggerOnUpdate = wf.triggeronupdateattributelist ? true : false;
+                    result.TriggerOnDelete = wf.triggerondelete;
+                }
+
+                // Try to extract Power Automate flow details from clientdata
+                if (wf.category === 5 && wf.clientdata) {
+                    try {
+                        const clientData = JSON.parse(wf.clientdata);
+                        if (clientData.properties) {
+                            result.FlowDisplayName = clientData.properties.displayName;
+                            result.FlowState = clientData.properties.state;
+                            result.FlowCreatedTime = clientData.properties.createdTime;
+                            result.FlowLastModifiedTime = clientData.properties.lastModifiedTime;
+                            result.FlowEnvironment = clientData.properties.environment?.name;
+                        }
+                        // Extract trigger type
+                        if (clientData.properties?.definition?.triggers) {
+                            const triggers = Object.keys(clientData.properties.definition.triggers);
+                            result.TriggerTypes = triggers;
+                        }
+                        // Extract actions
+                        if (clientData.properties?.definition?.actions) {
+                            const actions = Object.keys(clientData.properties.definition.actions);
+                            result.ActionCount = actions.length;
+                            result.Actions = actions.slice(0, 10); // First 10 actions
+                        }
+                    } catch (e) {
+                        // clientdata parsing failed, ignore
+                    }
+                }
+
+                return result;
+            });
         } catch (error) {
             console.error('D365 Workflows Fetch Error:', error.response?.data || error.message);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch Power Automate Cloud Flows specifically
+     */
+    async fetchPowerAutomateFlows(
+        accessToken: string,
+        organizationUrl: string,
+    ): Promise<any[]> {
+        try {
+            // Power Automate flows are stored as workflows with category = 5
+            const url = `${organizationUrl}/api/data/v9.2/workflows?$filter=category eq 5&$select=workflowid,name,description,primaryentity,statecode,createdon,modifiedon,clientdata`;
+
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'OData-MaxVersion': '4.0',
+                    'OData-Version': '4.0',
+                    Accept: 'application/json',
+                },
+            });
+
+            return response.data.value.map((flow: any) => {
+                const result: any = {
+                    FlowId: flow.workflowid,
+                    Name: flow.name,
+                    Description: flow.description,
+                    PrimaryEntity: flow.primaryentity || 'None (Global)',
+                    State: flow.statecode === 1 ? 'On' : 'Off',
+                    CreatedOn: flow.createdon,
+                    ModifiedOn: flow.modifiedon,
+                    Type: 'Power Automate Cloud Flow',
+                };
+
+                // Parse clientdata for flow definition details
+                if (flow.clientdata) {
+                    try {
+                        const clientData = JSON.parse(flow.clientdata);
+                        if (clientData.properties) {
+                            result.DisplayName = clientData.properties.displayName || flow.name;
+                            result.FlowState = clientData.properties.state;
+                            
+                            // Get trigger info
+                            if (clientData.properties?.definition?.triggers) {
+                                const triggers = clientData.properties.definition.triggers;
+                                result.Triggers = Object.entries(triggers).map(([name, trigger]: [string, any]) => ({
+                                    Name: name,
+                                    Type: trigger.type,
+                                    Kind: trigger.kind,
+                                }));
+                            }
+
+                            // Get actions summary
+                            if (clientData.properties?.definition?.actions) {
+                                const actions = clientData.properties.definition.actions;
+                                result.ActionCount = Object.keys(actions).length;
+                                result.Actions = Object.entries(actions).slice(0, 15).map(([name, action]: [string, any]) => ({
+                                    Name: name,
+                                    Type: action.type,
+                                }));
+                            }
+
+                            // Get connections used
+                            if (clientData.properties?.connectionReferences) {
+                                result.Connections = Object.entries(clientData.properties.connectionReferences).map(([key, conn]: [string, any]) => ({
+                                    Name: key,
+                                    Api: conn.api?.name,
+                                    ConnectionName: conn.connectionName,
+                                }));
+                            }
+                        }
+                    } catch (e) {
+                        // Parsing failed, continue with basic info
+                    }
+                }
+
+                return result;
+            });
+        } catch (error) {
+            console.error('Power Automate Flows Fetch Error:', error.response?.data || error.message);
             return [];
         }
     }
