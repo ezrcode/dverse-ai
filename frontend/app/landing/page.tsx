@@ -83,53 +83,60 @@ export default function LandingPage() {
     return (
         <div className="min-h-screen bg-[#FAFAFA]">
             {/* Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-[#E5E5E5]">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#FF6B47] rounded-lg flex items-center justify-center">
-                            <Database className="w-5 h-5 text-white" />
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E5E5E5]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-[#FF6B47] rounded-lg flex items-center justify-center">
+                                    <Database className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="text-xl font-bold text-[#1A1A1A]">DVerse<span className="text-[#FF6B47]">-ai</span></span>
+                            </div>
                         </div>
-                        <span className="text-xl font-bold text-[#1A1A1A]">DVerse<span className="text-[#FF6B47]">-ai</span></span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {/* Language Selector */}
-                        <div className="flex items-center gap-1 text-sm">
-                            <Globe className="w-4 h-4 text-[#666]" />
-                            <button
-                                onClick={() => setLang('es')}
-                                className={`px-2 py-1 rounded ${lang === 'es' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
+
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+                            {/* Language Selector */}
+                            <div className="flex items-center gap-1 text-sm justify-center">
+                                <Globe className="w-4 h-4 text-[#666]" />
+                                <button
+                                    onClick={() => setLang('es')}
+                                    className={`px-2 py-1 rounded ${lang === 'es' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
+                                >
+                                    ES
+                                </button>
+                                <span className="text-[#E5E5E5]">|</span>
+                                <button
+                                    onClick={() => setLang('en')}
+                                    className={`px-2 py-1 rounded ${lang === 'en' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
+                                >
+                                    EN
+                                </button>
+                            </div>
+                            <a
+                                href="https://github.com/ezrcode/dverse-ai"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hidden sm:flex items-center gap-2 text-[#666] hover:text-[#1A1A1A] transition-colors"
                             >
-                                ES
-                            </button>
-                            <span className="text-[#E5E5E5]">|</span>
-                            <button
-                                onClick={() => setLang('en')}
-                                className={`px-2 py-1 rounded ${lang === 'en' ? 'text-[#FF6B47] font-medium' : 'text-[#666] hover:text-[#1A1A1A]'}`}
-                            >
-                                EN
-                            </button>
+                                <Github className="w-5 h-5" />
+                                <span className="text-sm">GitHub</span>
+                            </a>
+                            <div className="flex items-center gap-2 justify-center">
+                                <Link
+                                    href="/login"
+                                    className="px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:text-[#FF6B47] transition-colors"
+                                >
+                                    {t('landing_login')}
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    className="px-4 py-2 bg-[#FF6B47] text-white text-sm font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
+                                >
+                                    {t('landing_startFree')}
+                                </Link>
+                            </div>
                         </div>
-                        <a
-                            href="https://github.com/ezrcode/dverse-ai"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hidden sm:flex items-center gap-2 text-[#666] hover:text-[#1A1A1A] transition-colors"
-                        >
-                            <Github className="w-5 h-5" />
-                            <span className="text-sm">GitHub</span>
-                        </a>
-                        <Link
-                            href="/login"
-                            className="px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:text-[#FF6B47] transition-colors"
-                        >
-                            {t('landing_login')}
-                        </Link>
-                        <Link
-                            href="/register"
-                            className="px-5 py-2.5 bg-[#FF6B47] text-white text-sm font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
-                        >
-                            {t('landing_startFree')}
-                        </Link>
                     </div>
                 </div>
             </nav>
