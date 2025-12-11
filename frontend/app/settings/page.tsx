@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { UserSettings, UpdateSettingsData, Conversation } from '@/types';
 import { Settings, Key, Sparkles, Check, Eye, EyeOff } from 'lucide-react';
 
 export default function SettingsPage() {
     const router = useRouter();
+    const isAuthenticated = useRequireAuth();
     const [settings, setSettings] = useState<UserSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -95,6 +97,10 @@ export default function SettingsPage() {
             setSaving(false);
         }
     };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     if (loading) {
         return (

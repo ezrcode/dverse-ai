@@ -7,12 +7,14 @@ import { Sidebar } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { Environment, Conversation } from '@/types';
 import { Database, Plus, Trash2, Edit, TestTube } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function EnvironmentsPage() {
     const router = useRouter();
+    const isAuthenticated = useRequireAuth();
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [loading, setLoading] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -75,6 +77,10 @@ export default function EnvironmentsPage() {
                 return <span className="badge-info">Not Tested</span>;
         }
     };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     if (loading) {
         return (

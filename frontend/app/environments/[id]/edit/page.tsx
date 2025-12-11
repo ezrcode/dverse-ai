@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { Environment, UpdateEnvironmentData, Conversation } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export default function EditEnvironmentPage() {
     const router = useRouter();
     const params = useParams();
     const id = params?.id?.toString();
+    const isAuthenticated = useRequireAuth();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -93,6 +95,10 @@ export default function EditEnvironmentPage() {
             setSaving(false);
         }
     };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     if (loading) {
         return (

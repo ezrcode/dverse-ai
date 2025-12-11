@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { User, Conversation } from '@/types';
 import { User as UserIcon, Globe, Upload } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 export default function ProfilePage() {
     const router = useRouter();
+    const isAuthenticated = useRequireAuth();
     const { t, lang, setLang } = useI18n();
     const [user, setUser] = useState<User | null>(null);
     const [name, setName] = useState('');
@@ -83,6 +85,10 @@ export default function ProfilePage() {
             setSaving(false);
         }
     };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     if (loading) {
         return (

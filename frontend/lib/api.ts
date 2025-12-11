@@ -101,4 +101,9 @@ export class ApiClient {
             localStorage.removeItem('accessToken');
         }
     }
+
+    static hasToken(): boolean {
+        if (typeof window === 'undefined') return false;
+        return !!localStorage.getItem('accessToken');
+    }
 }

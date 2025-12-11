@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { CreateEnvironmentData, Environment, Conversation } from '@/types';
 import { ArrowLeft } from 'lucide-react';
 
 export default function NewEnvironmentPage() {
     const router = useRouter();
+    const isAuthenticated = useRequireAuth();
     const [formData, setFormData] = useState<CreateEnvironmentData>({
         name: '',
         organizationUrl: '',
@@ -53,6 +55,10 @@ export default function NewEnvironmentPage() {
         };
         loadConversations();
     }, [router]);
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     return (
         <div className="flex h-screen bg-white">

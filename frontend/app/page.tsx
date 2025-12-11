@@ -7,11 +7,12 @@ import { MessageList } from '@/components/chat/message-list';
 import { PromptInput } from '@/components/chat/prompt-input';
 import { EnvironmentSelector } from '@/components/environments/environment-selector';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { Environment, Conversation, Message, SendMessageData, ChatResponse, User } from '@/types';
-import { ApiClient as Client } from '@/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
+  const isAuthenticated = useRequireAuth();
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
@@ -100,6 +101,11 @@ export default function HomePage() {
     setCurrentConversationId('');
     setMessages([]);
   };
+
+  // Don't render anything while checking auth
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (initialLoading) {
     return (

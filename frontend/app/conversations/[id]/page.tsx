@@ -7,6 +7,7 @@ import { MessageList } from '@/components/chat/message-list';
 import { PromptInput } from '@/components/chat/prompt-input';
 import { EnvironmentSelector } from '@/components/environments/environment-selector';
 import { ApiClient } from '@/lib/api';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 import type { Environment, Conversation, Message, SendMessageData, ChatResponse, User } from '@/types';
 import { Pencil } from 'lucide-react';
 
@@ -14,6 +15,7 @@ export default function ConversationPage() {
     const router = useRouter();
     const params = useParams();
     const conversationId = params.id as string;
+    const isAuthenticated = useRequireAuth();
 
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -123,6 +125,10 @@ export default function ConversationPage() {
             setLoading(false);
         }
     };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     if (initialLoading) {
         return (
