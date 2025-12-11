@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ApiClient } from './api';
 
 /**
- * Hook that redirects to login if no auth token is present.
+ * Hook that redirects to landing if no auth token is present.
  * Should be called at the top of protected pages.
  */
 export function useRequireAuth() {
@@ -13,7 +13,7 @@ export function useRequireAuth() {
 
     useEffect(() => {
         if (!ApiClient.hasToken()) {
-            router.replace('/login');
+            router.replace('/landing');
         }
     }, [router]);
 
