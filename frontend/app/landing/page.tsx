@@ -384,7 +384,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Pricing */}
+            {/* Pricing - Hidden for now
             <section className="py-20 px-6 bg-white border-y border-[#E5E5E5]">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
@@ -392,9 +392,8 @@ export default function LandingPage() {
                         <p className="text-[#666]">{t('landing_pricingSubtitle')}</p>
                     </div>
 
-                    <div className="flex justify-center">
-                        {/* Free */}
-                        <div className="bg-[#FAFAFA] rounded-xl p-8 border border-[#E5E5E5] max-w-sm w-full">
+                    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                        <div className="bg-[#FAFAFA] rounded-xl p-8 border border-[#E5E5E5]">
                             <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{t('landing_free')}</h3>
                             <div className="mb-6">
                                 <span className="text-4xl font-bold text-[#1A1A1A]">$0</span>
@@ -420,14 +419,12 @@ export default function LandingPage() {
                             </ul>
                             <Link
                                 href="/register"
-                                className="block text-center px-6 py-3 bg-[#FF6B47] text-white font-medium rounded-lg hover:bg-[#E55A3A] transition-colors"
+                                className="block text-center px-6 py-3 border border-[#E5E5E5] text-[#1A1A1A] font-medium rounded-lg hover:border-[#FF6B47] hover:text-[#FF6B47] transition-colors"
                             >
                                 {t('landing_getStartedFree')}
                             </Link>
                         </div>
 
-                        {/* Pro - Hidden for now */}
-                        {/* 
                         <div className="bg-[#1A1A1A] rounded-xl p-8 border-2 border-[#FF6B47] relative">
                             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#FF6B47] text-white text-xs font-medium px-3 py-1 rounded-full">
                                 {t('landing_mostPopular')}
@@ -462,10 +459,7 @@ export default function LandingPage() {
                                 {t('landing_startProTrial')}
                             </Link>
                         </div>
-                        */}
 
-                        {/* Enterprise - Hidden for now */}
-                        {/*
                         <div className="bg-[#FAFAFA] rounded-xl p-8 border border-[#E5E5E5]">
                             <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{t('landing_enterprise')}</h3>
                             <div className="mb-6">
@@ -496,10 +490,10 @@ export default function LandingPage() {
                                 {t('landing_contactUs')}
                             </a>
                         </div>
-                        */}
                     </div>
                 </div>
             </section>
+            */}
 
             {/* Tech Stack */}
             <section className="py-20 px-6">
