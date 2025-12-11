@@ -679,7 +679,7 @@ export class DataverseService {
     private getWorkflowCategoryName(category: number): string {
         const categories: Record<number, string> = {
             0: 'Workflow',
-            1: 'Dialog',
+            1: 'Flow (Power Automate)',
             2: 'Business Rule',
             3: 'Action',
             4: 'Business Process Flow',
