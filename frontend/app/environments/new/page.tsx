@@ -193,13 +193,13 @@ export default function NewEnvironmentPage() {
                     </Card>
 
                     <div className="mt-6 p-4 bg-secondary-light rounded-lg">
-                        <h3 className="font-semibold text-text-primary mb-2">ℹ️ How to get these credentials</h3>
+                        <h3 className="font-semibold text-text-primary mb-2">ℹ️ {t('env_help_title')}</h3>
                         <ol className="text-sm text-text-secondary space-y-1 list-decimal list-inside">
-                            <li>Go to Azure Portal → Azure Active Directory → App registrations</li>
-                            <li>Create a new app registration or select an existing one</li>
-                            <li>Copy the Application (client) ID and Directory (tenant) ID</li>
-                            <li>Go to Certificates & secrets → Create a new client secret</li>
-                            <li>Grant API permissions for Dynamics CRM (user_impersonation)</li>
+                            <li>{t('env_help_1')}</li>
+                            <li>{t('env_help_2')}</li>
+                            <li>{t('env_help_3')}</li>
+                            <li>{t('env_help_4')}</li>
+                            <li>{t('env_help_5')}</li>
                         </ol>
                     </div>
                 </div>
