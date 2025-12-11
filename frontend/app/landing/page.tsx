@@ -559,7 +559,7 @@ export default function LandingPage() {
                                 GitHub
                             </a>
                             <span>·</span>
-                            <span>by <a href="https://github.com/ezrcode" target="_blank" rel="noopener noreferrer" className="text-[#FF6B47] hover:underline">@ezrcode</a></span>
+                            <span>by <a href="https://own.page/ezrcode" target="_blank" rel="noopener noreferrer" className="text-[#FF6B47] hover:underline">@ezrcode</a></span>
                         </div>
 
                         <p className="text-sm text-[#999]">

@@ -45,11 +45,9 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light via-white to-secondary-light p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-3 text-center">
-                    <div className="flex items-center justify-center mb-2">
-                        <div className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                            🔮 DVerse-ai
-                        </div>
-                    </div>
+                    <Link href="/landing" className="flex items-center justify-center mb-2">
+                        <img src="/logo.png" alt="DVerse-ai" className="h-16 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
+                    </Link>
                     <CardTitle className="text-2xl">Welcome Back</CardTitle>
                     <CardDescription>
                         Sign in to your account to continue analyzing your Dataverse
