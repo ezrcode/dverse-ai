@@ -16,7 +16,9 @@ export default function ProfilePage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
     const toAbsolute = (url: string | null) => {
         if (!url) return null;
-        return url.startsWith('http') ? url : `${API_URL}${url}`;
+        // data: URLs (base64) and http URLs are already absolute
+        if (url.startsWith('http') || url.startsWith('data:')) return url;
+        return `${API_URL}${url}`;
     };
     const router = useRouter();
     const isAuthenticated = useRequireAuth();

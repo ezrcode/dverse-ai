@@ -16,9 +16,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, UserResponseDto, UpdateSettingsDto, UpdateProfileDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import type { Express } from 'express';
 
 @Controller('auth')
@@ -126,29 +124,28 @@ export class AuthController {
     @Post('profile/photo')
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: diskStorage({
-                destination: (_req, _file, cb) => {
-                    // Store uploads inside backend/uploads to serve statically
-                    const dest = path.join(process.cwd(), 'uploads');
-                    if (!fs.existsSync(dest)) {
-                        fs.mkdirSync(dest, { recursive: true });
-                    }
-                    cb(null, dest);
-                },
-                filename: (_req, file, cb) => {
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = path.extname(file.originalname);
-                    cb(null, `${uniqueSuffix}${ext}`);
-                },
-            }),
+            storage: memoryStorage(),
+            limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+            fileFilter: (_req, file, cb) => {
+                if (!file.mimetype.startsWith('image/')) {
+                    return cb(new Error('Only image files are allowed'), false);
+                }
+                cb(null, true);
+            },
         }),
     )
-    async uploadProfilePhoto(@UploadedFile() file: any, @Request() req) {
+    async uploadProfilePhoto(@UploadedFile() file: Express.Multer.File, @Request() req) {
         if (!file) {
             throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
         }
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        return { url: `${baseUrl}/uploads/${file.filename}` };
+        // Convert to base64 data URL and save to DB
+        const base64 = file.buffer.toString('base64');
+        const dataUrl = `data:${file.mimetype};base64,${base64}`;
+        
+        // Update user profile with the base64 image
+        await this.authService.updateProfile(req.user.userId, { profilePhotoUrl: dataUrl });
+        
+        return { url: dataUrl };
     }
 
     @UseGuards(JwtAuthGuard)
