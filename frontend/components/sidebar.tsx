@@ -104,11 +104,22 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
     return (
         <div className="w-[280px] h-screen bg-white border-r border-border flex flex-col">
             {/* Header */}
-            <div className="p-6 border-b border-border">
-                <div className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex items-center gap-2">
-                    <span>🔮</span>
-                    <span>DVerse-ai</span>
-                </div>
+            <div className="p-6 border-b border-border flex flex-col items-start gap-2">
+                <Link href="/landing" className="flex items-center gap-3">
+                    <img
+                        src="/logo.png"
+                        alt="DVerse-ai"
+                        className="h-10 w-auto"
+                    />
+                </Link>
+                <a
+                    href="https://own.page/ezrcode"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-text-secondary hover:text-primary transition-colors"
+                >
+                    by @ezrcode
+                </a>
             </div>
 
             {/* New Chat Button */}
