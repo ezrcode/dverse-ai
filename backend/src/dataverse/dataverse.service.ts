@@ -281,61 +281,92 @@ export class DataverseService {
                 let workflows: any[] = [];
                 
                 if (asksForPowerAutomate) {
-                    // Fetch specifically Power Automate flows (categories 1, 5, 6) from Dataverse
-                    workflows = await this.fetchPowerAutomateFlows(accessToken, organizationUrl);
-                    
-                    // Also fetch all workflows to check for any with Power Automate characteristics
+                    // Fetch ALL workflows first to get complete picture
                     const allWorkflows = await this.fetchWorkflows(accessToken, organizationUrl);
-                    const powerAutomateFromAll = allWorkflows.filter((wf: any) => 
+                    
+                    // Separate by category
+                    const powerAutomateFlows = allWorkflows.filter((wf: any) => 
                         wf.CategoryCode === 1 || wf.CategoryCode === 5 || wf.CategoryCode === 6
                     );
+                    const classicWorkflows = allWorkflows.filter((wf: any) => 
+                        wf.CategoryCode === 0
+                    );
+                    const businessRules = allWorkflows.filter((wf: any) => 
+                        wf.CategoryCode === 2
+                    );
+                    const bpfs = allWorkflows.filter((wf: any) => 
+                        wf.CategoryCode === 4
+                    );
                     
-                    // Merge and dedupe
-                    const allFlowIds = new Set(workflows.map((f: any) => f.FlowId));
-                    powerAutomateFromAll.forEach((wf: any) => {
-                        if (!allFlowIds.has(wf.WorkflowId)) {
-                            workflows.push({
-                                FlowId: wf.WorkflowId,
-                                Name: wf.Name,
-                                Description: wf.Description,
-                                PrimaryEntity: wf.PrimaryEntity,
-                                State: wf.State,
-                                Type: wf.Category,
-                                CreatedOn: wf.CreatedOn,
-                                ModifiedOn: wf.ModifiedOn,
-                                Source: 'Dataverse',
-                            });
-                        }
-                    });
+                    console.log(`Workflow breakdown - PA: ${powerAutomateFlows.length}, Classic: ${classicWorkflows.length}, BR: ${businessRules.length}, BPF: ${bpfs.length}`);
                     
                     // Try to fetch from Flow API as well (for non-solution flows)
                     let flowApiFlows: any[] = [];
                     let flowApiNote = '';
                     if (environment) {
                         flowApiFlows = await this.fetchFlowsFromFlowApi(environment);
+                        console.log(`Flow API returned: ${flowApiFlows.length} flows`);
                         if (flowApiFlows.length > 0) {
-                            // Add Flow API flows, avoiding duplicates
-                            const existingNames = new Set(workflows.map((f: any) => f.Name?.toLowerCase()));
-                            flowApiFlows.forEach((flow: any) => {
-                                if (!existingNames.has(flow.Name?.toLowerCase())) {
-                                    workflows.push(flow);
-                                }
-                            });
-                            flowApiNote = ` Additionally found ${flowApiFlows.length} flows from Power Automate API.`;
+                            flowApiNote = ` Found ${flowApiFlows.length} flows via Power Platform API.`;
                         }
                     }
+                    
+                    // Combine Power Automate flows from both sources
+                    workflows = [...powerAutomateFlows.map((wf: any) => ({
+                        FlowId: wf.WorkflowId,
+                        Name: wf.Name,
+                        Description: wf.Description,
+                        PrimaryEntity: wf.PrimaryEntity,
+                        State: wf.State,
+                        Type: wf.Category,
+                        CategoryCode: wf.CategoryCode,
+                        CreatedOn: wf.CreatedOn,
+                        ModifiedOn: wf.ModifiedOn,
+                        Source: 'Dataverse (Solution)',
+                    }))];
+                    
+                    // Add Flow API flows, avoiding duplicates
+                    const existingNames = new Set(workflows.map((f: any) => f.Name?.toLowerCase()));
+                    flowApiFlows.forEach((flow: any) => {
+                        if (!existingNames.has(flow.Name?.toLowerCase())) {
+                            workflows.push(flow);
+                        }
+                    });
                     
                     const activeFlows = workflows.filter((f: any) => 
                         f.State === 'On' || f.State === 'Active' || f.State === 'Started'
                     ).length;
                     
-                    let summary = `Found ${workflows.length} Power Automate/Cloud Flows total (${activeFlows} active).${flowApiNote}`;
-                    if (workflows.length === 0) {
-                        summary = 'No Power Automate Cloud Flows found. ';
-                        if (!environment) {
-                            summary += 'Note: Only solution-aware flows are visible in Dataverse. ';
+                    let summary = '';
+                    if (workflows.length > 0) {
+                        summary = `Found ${workflows.length} Power Automate Cloud Flows (${activeFlows} active).${flowApiNote}`;
+                    } else {
+                        // No Power Automate flows, but provide context about what IS available
+                        summary = `No Power Automate Cloud Flows (CategoryCode 1, 5, or 6) found in Dataverse. `;
+                        if (classicWorkflows.length > 0) {
+                            summary += `However, found ${classicWorkflows.length} Classic Dataverse Workflows (CategoryCode 0). `;
                         }
-                        summary += 'Non-solution flows can be viewed in Power Automate portal (flow.microsoft.com). Make sure your App Registration has Flow.Read.All permissions for full access.';
+                        if (businessRules.length > 0) {
+                            summary += `Also found ${businessRules.length} Business Rules. `;
+                        }
+                        if (bpfs.length > 0) {
+                            summary += `Also found ${bpfs.length} Business Process Flows. `;
+                        }
+                        summary += 'Power Automate Cloud Flows only appear in Dataverse if they are part of a Solution. Non-solution flows require the Power Platform Flow API with Flow.Read.All permission.';
+                        
+                        // Include classic workflows in the response so AI has context
+                        workflows = classicWorkflows.map((wf: any) => ({
+                            FlowId: wf.WorkflowId,
+                            Name: wf.Name,
+                            Description: wf.Description,
+                            PrimaryEntity: wf.PrimaryEntity,
+                            State: wf.State,
+                            Type: 'Classic Dataverse Workflow (NOT Power Automate)',
+                            CategoryCode: wf.CategoryCode,
+                            CreatedOn: wf.CreatedOn,
+                            ModifiedOn: wf.ModifiedOn,
+                            Source: 'Dataverse',
+                        }));
                     }
                     
                     return {
