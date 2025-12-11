@@ -104,8 +104,8 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
     return (
         <div className="w-[280px] h-screen bg-white border-r border-border flex flex-col">
             {/* Header */}
-            <div className="p-6 border-b border-border flex flex-col items-start gap-2">
-                <Link href="/landing" className="flex items-center gap-3">
+            <div className="p-6 border-b border-border flex flex-col items-center justify-center gap-3 text-center">
+                <Link href="/landing" className="flex items-center justify-center">
                     <img
                         src="/logo.png"
                         alt="DVerse-ai"
