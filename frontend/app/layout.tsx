@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DVerse-AI | AI-Powered Dataverse Analysis",
   description: "Analyze and query your Microsoft Dynamics 365/Dataverse instances using natural language powered by Google Gemini AI",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
