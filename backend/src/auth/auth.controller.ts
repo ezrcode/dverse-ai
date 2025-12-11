@@ -17,7 +17,6 @@ import { RegisterDto, LoginDto, UserResponseDto, UpdateSettingsDto, UpdateProfil
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import type { Express } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -134,7 +133,7 @@ export class AuthController {
             },
         }),
     )
-    async uploadProfilePhoto(@UploadedFile() file: Express.Multer.File, @Request() req) {
+    async uploadProfilePhoto(@UploadedFile() file: any, @Request() req) {
         if (!file) {
             throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
         }
