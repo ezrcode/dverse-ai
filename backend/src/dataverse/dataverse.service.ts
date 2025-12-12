@@ -15,7 +15,16 @@ interface MetadataResult {
     forms?: any[];
     views?: any[];
     workflows?: any[];
+    data?: any[];
     summary: string;
+}
+
+interface DataQueryResult {
+    entityName: string;
+    records: any[];
+    totalCount?: number;
+    query: string;
+    error?: string;
 }
 
 @Injectable()
@@ -940,5 +949,303 @@ export class DataverseService {
             4: 'Organization',
         };
         return scopes[scope] || `Unknown (${scope})`;
+    }
+
+    /**
+     * Execute an OData query to fetch actual data records
+     * Limited to 100 records max for safety
+     */
+    async executeDataQuery(
+        accessToken: string,
+        organizationUrl: string,
+        entitySetName: string,
+        options: {
+            select?: string[];
+            filter?: string;
+            orderby?: string;
+            top?: number;
+            expand?: string;
+        } = {},
+    ): Promise<DataQueryResult> {
+        try {
+            // Build OData query URL
+            const queryParams: string[] = [];
+            
+            if (options.select && options.select.length > 0) {
+                queryParams.push(`$select=${options.select.join(',')}`);
+            }
+            
+            if (options.filter) {
+                queryParams.push(`$filter=${encodeURIComponent(options.filter)}`);
+            }
+            
+            if (options.orderby) {
+                queryParams.push(`$orderby=${options.orderby}`);
+            }
+            
+            // Limit to max 100 records for safety
+            const top = Math.min(options.top || 50, 100);
+            queryParams.push(`$top=${top}`);
+            
+            // Add count to know total records
+            queryParams.push('$count=true');
+            
+            if (options.expand) {
+                queryParams.push(`$expand=${options.expand}`);
+            }
+            
+            const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+            const url = `${organizationUrl}/api/data/v9.2/${entitySetName}${queryString}`;
+            
+            console.log('Executing OData query:', url);
+            
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'OData-MaxVersion': '4.0',
+                    'OData-Version': '4.0',
+                    Accept: 'application/json',
+                    Prefer: 'odata.include-annotations="*"',
+                },
+                timeout: 30000, // 30 second timeout
+            });
+            
+            const records = response.data.value || [];
+            const totalCount = response.data['@odata.count'];
+            
+            // Clean up records - remove OData metadata fields
+            const cleanedRecords = records.map((record: any) => {
+                const cleaned: any = {};
+                for (const [key, value] of Object.entries(record)) {
+                    // Skip OData metadata fields
+                    if (!key.startsWith('@') && !key.startsWith('_') && !key.endsWith('@OData.Community.Display.V1.FormattedValue')) {
+                        // Check if there's a formatted value
+                        const formattedKey = `${key}@OData.Community.Display.V1.FormattedValue`;
+                        if (record[formattedKey]) {
+                            cleaned[key] = record[formattedKey];
+                        } else {
+                            cleaned[key] = value;
+                        }
+                    }
+                }
+                return cleaned;
+            });
+            
+            return {
+                entityName: entitySetName,
+                records: cleanedRecords,
+                totalCount,
+                query: url,
+            };
+        } catch (error) {
+            console.error('OData Query Error:', error.response?.data || error.message);
+            return {
+                entityName: entitySetName,
+                records: [],
+                query: `${organizationUrl}/api/data/v9.2/${entitySetName}`,
+                error: error.response?.data?.error?.message || error.message,
+            };
+        }
+    }
+
+    /**
+     * Get the entity set name (plural) for a given entity logical name
+     */
+    async getEntitySetName(
+        accessToken: string,
+        organizationUrl: string,
+        entityLogicalName: string,
+    ): Promise<string | null> {
+        try {
+            const response = await axios.get(
+                `${organizationUrl}/api/data/v9.2/EntityDefinitions(LogicalName='${entityLogicalName}')?$select=EntitySetName`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'OData-MaxVersion': '4.0',
+                        'OData-Version': '4.0',
+                        Accept: 'application/json',
+                    },
+                },
+            );
+            return response.data.EntitySetName;
+        } catch (error) {
+            console.error('Error getting EntitySetName:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Fetch data based on natural language query
+     * Returns relevant records from the entity
+     */
+    async fetchDataFromQuery(
+        accessToken: string,
+        organizationUrl: string,
+        entityLogicalName: string,
+        queryOptions: {
+            select?: string[];
+            filter?: string;
+            orderby?: string;
+            top?: number;
+        } = {},
+    ): Promise<DataQueryResult> {
+        // Get the entity set name
+        const entitySetName = await this.getEntitySetName(accessToken, organizationUrl, entityLogicalName);
+        
+        if (!entitySetName) {
+            return {
+                entityName: entityLogicalName,
+                records: [],
+                query: '',
+                error: `Could not find entity set name for ${entityLogicalName}`,
+            };
+        }
+        
+        return this.executeDataQuery(accessToken, organizationUrl, entitySetName, queryOptions);
+    }
+
+    /**
+     * Execute a count query for an entity
+     */
+    async countRecords(
+        accessToken: string,
+        organizationUrl: string,
+        entityLogicalName: string,
+        filter?: string,
+    ): Promise<{ count: number; error?: string }> {
+        try {
+            const entitySetName = await this.getEntitySetName(accessToken, organizationUrl, entityLogicalName);
+            
+            if (!entitySetName) {
+                return { count: 0, error: `Entity ${entityLogicalName} not found` };
+            }
+            
+            let url = `${organizationUrl}/api/data/v9.2/${entitySetName}?$count=true&$top=0`;
+            
+            if (filter) {
+                url += `&$filter=${encodeURIComponent(filter)}`;
+            }
+            
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'OData-MaxVersion': '4.0',
+                    'OData-Version': '4.0',
+                    Accept: 'application/json',
+                },
+                timeout: 30000,
+            });
+            
+            return { count: response.data['@odata.count'] || 0 };
+        } catch (error) {
+            console.error('Count Query Error:', error.response?.data || error.message);
+            return { count: 0, error: error.response?.data?.error?.message || error.message };
+        }
+    }
+
+    /**
+     * Execute aggregate query (sum, avg, count grouped by)
+     */
+    async aggregateQuery(
+        accessToken: string,
+        organizationUrl: string,
+        entityLogicalName: string,
+        options: {
+            groupBy?: string;
+            aggregate: { field: string; operation: 'sum' | 'avg' | 'min' | 'max' | 'count' }[];
+            filter?: string;
+        },
+    ): Promise<{ results: any[]; error?: string }> {
+        try {
+            const entitySetName = await this.getEntitySetName(accessToken, organizationUrl, entityLogicalName);
+            
+            if (!entitySetName) {
+                return { results: [], error: `Entity ${entityLogicalName} not found` };
+            }
+            
+            // Build FetchXML for aggregate query (OData aggregation can be limited)
+            // For now, we'll fetch records and aggregate in code
+            const selectFields = options.aggregate.map(a => a.field);
+            if (options.groupBy && !selectFields.includes(options.groupBy)) {
+                selectFields.push(options.groupBy);
+            }
+            
+            const result = await this.executeDataQuery(accessToken, organizationUrl, entitySetName, {
+                select: selectFields,
+                filter: options.filter,
+                top: 5000, // Fetch more for aggregation, but still limited
+            });
+            
+            if (result.error) {
+                return { results: [], error: result.error };
+            }
+            
+            // Perform aggregation in code
+            if (options.groupBy) {
+                const groups = new Map<string, any[]>();
+                for (const record of result.records) {
+                    const key = String(record[options.groupBy] || 'null');
+                    if (!groups.has(key)) {
+                        groups.set(key, []);
+                    }
+                    groups.get(key)!.push(record);
+                }
+                
+                const aggregated: any[] = [];
+                for (const [groupValue, records] of groups) {
+                    const row: any = { [options.groupBy]: groupValue };
+                    for (const agg of options.aggregate) {
+                        const values = records.map(r => Number(r[agg.field]) || 0);
+                        switch (agg.operation) {
+                            case 'sum':
+                                row[`${agg.field}_sum`] = values.reduce((a, b) => a + b, 0);
+                                break;
+                            case 'avg':
+                                row[`${agg.field}_avg`] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                                break;
+                            case 'min':
+                                row[`${agg.field}_min`] = Math.min(...values);
+                                break;
+                            case 'max':
+                                row[`${agg.field}_max`] = Math.max(...values);
+                                break;
+                            case 'count':
+                                row[`${agg.field}_count`] = values.length;
+                                break;
+                        }
+                    }
+                    aggregated.push(row);
+                }
+                return { results: aggregated };
+            } else {
+                // No grouping, just aggregate all
+                const row: any = {};
+                for (const agg of options.aggregate) {
+                    const values = result.records.map(r => Number(r[agg.field]) || 0);
+                    switch (agg.operation) {
+                        case 'sum':
+                            row[`${agg.field}_sum`] = values.reduce((a, b) => a + b, 0);
+                            break;
+                        case 'avg':
+                            row[`${agg.field}_avg`] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                            break;
+                        case 'min':
+                            row[`${agg.field}_min`] = Math.min(...values);
+                            break;
+                        case 'max':
+                            row[`${agg.field}_max`] = Math.max(...values);
+                            break;
+                        case 'count':
+                            row[`count`] = result.records.length;
+                            break;
+                    }
+                }
+                return { results: [row] };
+            }
+        } catch (error) {
+            console.error('Aggregate Query Error:', error.message);
+            return { results: [], error: error.message };
+        }
     }
 }

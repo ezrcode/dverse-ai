@@ -57,6 +57,7 @@ export class ChatService {
 
         // Fetch metadata from all environments
         const allMetadata: any[] = [];
+        const allDataResults: { envName: string; results: any[] }[] = [];
         const environmentSummaries: string[] = [];
 
         for (const environment of environments) {
@@ -81,6 +82,85 @@ export class ChatService {
                 if (metadataResult.forms) envMetadata.forms = metadataResult.forms;
                 if (metadataResult.views) envMetadata.views = metadataResult.views;
                 if (metadataResult.workflows) envMetadata.workflows = metadataResult.workflows;
+
+                // Check if the query needs actual data
+                if (metadataResult.entities.length > 0) {
+                    const entityInfo = metadataResult.entities.map((e: any) => ({
+                        logicalName: e.LogicalName,
+                        displayName: e.DisplayName,
+                        attributes: (e.Attributes || []).slice(0, 50).map((a: any) => ({
+                            logicalName: a.LogicalName,
+                            displayName: a.DisplayName,
+                            type: a.AttributeType,
+                        })),
+                    }));
+
+                    const queryIntent = await this.geminiService.analyzeQueryIntent(
+                        message,
+                        entityInfo,
+                        userApiKey,
+                    );
+
+                    console.log(`[${environment.name}] Query intent:`, queryIntent);
+
+                    if (queryIntent.needsData && queryIntent.entities.length > 0) {
+                        console.log(`[${environment.name}] Fetching actual data...`);
+                        
+                        const dataResults: any[] = [];
+                        for (const entityQuery of queryIntent.entities) {
+                            try {
+                                if (entityQuery.aggregation) {
+                                    // Aggregation query
+                                    const aggResult = await this.dataverseService.aggregateQuery(
+                                        accessToken,
+                                        environment.organizationUrl,
+                                        entityQuery.entityName,
+                                        {
+                                            groupBy: entityQuery.groupBy,
+                                            aggregate: [entityQuery.aggregation],
+                                            filter: entityQuery.filter,
+                                        },
+                                    );
+                                    dataResults.push({
+                                        entityName: entityQuery.entityName,
+                                        records: aggResult.results,
+                                        totalCount: aggResult.results.length,
+                                        query: `Aggregation: ${entityQuery.aggregation.operation}(${entityQuery.aggregation.field})`,
+                                        error: aggResult.error,
+                                    });
+                                } else {
+                                    // Regular data query
+                                    const result = await this.dataverseService.fetchDataFromQuery(
+                                        accessToken,
+                                        environment.organizationUrl,
+                                        entityQuery.entityName,
+                                        {
+                                            select: entityQuery.select,
+                                            filter: entityQuery.filter,
+                                            orderby: entityQuery.orderby,
+                                            top: entityQuery.top || 50,
+                                        },
+                                    );
+                                    dataResults.push(result);
+                                }
+                            } catch (dataError) {
+                                console.error(`Error fetching data for ${entityQuery.entityName}:`, dataError);
+                                dataResults.push({
+                                    entityName: entityQuery.entityName,
+                                    records: [],
+                                    query: '',
+                                    error: dataError.message,
+                                });
+                            }
+                        }
+                        
+                        if (dataResults.length > 0) {
+                            allDataResults.push({ envName: environment.name, results: dataResults });
+                            envMetadata.dataFetched = true;
+                            envMetadata.dataQueryExplanation = queryIntent.explanation;
+                        }
+                    }
+                }
 
                 allMetadata.push(envMetadata);
                 environmentSummaries.push(`${environment.name}: ${metadataResult.summary}`);
@@ -121,12 +201,29 @@ Format your response in a clear, comparative way using tables when appropriate.`
             metadataText = JSON.stringify(allMetadata[0], null, 2);
         }
 
-        // Get AI response
-        const aiResponse = await this.geminiService.analyze(
-            metadataText, 
-            isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
-            userApiKey
-        );
+        // Get AI response - use data-aware analysis if we have data
+        let aiResponse: string;
+        
+        if (allDataResults.length > 0) {
+            // We have actual data, use the data-aware analysis
+            const flatDataResults = allDataResults.flatMap(dr => 
+                dr.results.map(r => ({ ...r, environmentName: dr.envName }))
+            );
+            
+            aiResponse = await this.geminiService.analyzeWithData(
+                metadataText,
+                flatDataResults,
+                isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
+                userApiKey,
+            );
+        } else {
+            // Metadata-only analysis
+            aiResponse = await this.geminiService.analyze(
+                metadataText, 
+                isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
+                userApiKey
+            );
+        }
 
         // Save AI message
         await this.conversationsService.addMessage(
@@ -137,6 +234,7 @@ Format your response in a clear, comparative way using tables when appropriate.`
                 entitiesCount: allMetadata.reduce((acc, env) => acc + (env.entities?.length || 0), 0),
                 environmentIds: environmentIds,
                 comparisonMode: isComparison,
+                dataFetched: allDataResults.length > 0,
             },
         );
 
