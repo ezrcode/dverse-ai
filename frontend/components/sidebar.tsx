@@ -12,11 +12,14 @@ import {
     FolderOpen,
     Trash2,
     Pencil,
+    Menu,
+    X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiClient } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useEffect, useState } from 'react';
 
 interface SidebarProps {
     conversations?: Array<{
@@ -30,6 +33,13 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { t, lang, setLang } = useI18n();
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    useEffect(() => {
+        // Close drawer on route changes
+        setMobileOpen(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     const handleLogout = () => {
         ApiClient.removeToken();
@@ -101,25 +111,39 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
         return acc;
     }, {} as Record<string, typeof conversations>);
 
-    return (
-        <div className="w-[280px] h-screen bg-white border-r border-border flex flex-col">
+    const closeMobile = () => setMobileOpen(false);
+
+    const SidebarContent = ({ showMobileClose }: { showMobileClose: boolean }) => (
+        <>
             {/* Header */}
-            <div className="p-6 border-b border-border flex flex-col items-center justify-center gap-3 text-center">
-                <Link href="/landing" className="flex items-center justify-center">
-                    <img
-                        src="/logo.png"
-                        alt="DVerse-ai"
-                        className="h-10 w-auto"
-                    />
-                </Link>
-                <a
-                    href="https://own.page/ezrcode"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-text-secondary hover:text-primary transition-colors"
-                >
-                    by @ezrcode
-                </a>
+            <div className="p-6 border-b border-border flex items-center justify-between gap-3">
+                <div className="flex flex-col items-center justify-center gap-3 text-center flex-1">
+                    <Link href="/landing" className="flex items-center justify-center" onClick={closeMobile}>
+                        <img
+                            src="/logo.png"
+                            alt="DVerse-ai"
+                            className="h-10 w-auto"
+                        />
+                    </Link>
+                    <a
+                        href="https://own.page/ezrcode"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-text-secondary hover:text-primary transition-colors"
+                    >
+                        by @ezrcode
+                    </a>
+                </div>
+                {showMobileClose && (
+                    <button
+                        type="button"
+                        onClick={closeMobile}
+                        className="md:hidden p-2 rounded-md hover:bg-surface text-text-secondary"
+                        aria-label="Close menu"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {/* New Chat Button */}
@@ -127,7 +151,10 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                 <Button
                     variant="accent"
                     className="w-full justify-start gap-2"
-                    onClick={handleNewChat}
+                    onClick={() => {
+                        handleNewChat();
+                        closeMobile();
+                    }}
                 >
                     <Plus className="w-4 h-4" />
                     {t('sidebar_newChat')}
@@ -150,6 +177,7 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                                     ? "bg-primary-light text-primary border-l-4 border-primary"
                                     : "text-text-secondary hover:bg-surface hover:text-text-primary"
                             )}
+                            onClick={closeMobile}
                         >
                             <Database className="w-4 h-4" />
                             {t('sidebar_allEnvs')}
@@ -159,6 +187,7 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-primary hover:bg-primary-light"
                             )}
+                            onClick={closeMobile}
                         >
                             <Plus className="w-4 h-4" />
                             {t('sidebar_addEnv')}
@@ -191,6 +220,7 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                                                         ? "bg-primary-light text-primary border-l-4 border-primary"
                                                         : "text-text-secondary hover:bg-surface hover:text-text-primary"
                                                 )}
+                                                onClick={closeMobile}
                                             >
                                                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
                                                 <span className="truncate">{conv.title}</span>
@@ -241,6 +271,7 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                             ? "bg-primary-light text-primary"
                             : "text-text-secondary hover:bg-surface hover:text-text-primary"
                     )}
+                    onClick={closeMobile}
                 >
                     <Settings className="w-4 h-4" />
                     {t('sidebar_settings')}
@@ -253,6 +284,7 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                             ? "bg-primary-light text-primary"
                             : "text-text-secondary hover:bg-surface hover:text-text-primary"
                     )}
+                    onClick={closeMobile}
                 >
                     <User className="w-4 h-4" />
                     {t('sidebar_profile')}
@@ -289,6 +321,46 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                     {t('sidebar_logout')}
                 </button>
             </div>
-        </div>
+        </>
+    );
+
+    return (
+        <>
+            {/* Mobile floating trigger */}
+            {!mobileOpen && (
+                <button
+                    type="button"
+                    onClick={() => setMobileOpen(true)}
+                    className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-md bg-white border border-border shadow-sm text-text-primary"
+                    aria-label="Open menu"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+            )}
+
+            {/* Mobile overlay */}
+            <div
+                className={cn(
+                    "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity",
+                    mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+                )}
+                onClick={closeMobile}
+            />
+
+            {/* Mobile drawer */}
+            <aside
+                className={cn(
+                    "md:hidden fixed inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-border flex flex-col transform transition-transform duration-200",
+                    mobileOpen ? "translate-x-0" : "-translate-x-full",
+                )}
+            >
+                <SidebarContent showMobileClose />
+            </aside>
+
+            {/* Desktop sidebar */}
+            <aside className="hidden md:flex w-[280px] h-screen bg-white border-r border-border flex-col">
+                <SidebarContent showMobileClose={false} />
+            </aside>
+        </>
     );
 }

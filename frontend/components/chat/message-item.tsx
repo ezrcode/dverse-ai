@@ -53,7 +53,7 @@ export function MessageItem({ message, userProfilePhotoUrl, environmentName }: M
             </div>
 
             {/* Message Content */}
-            <div className={`flex-1 max-w-[70%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
+            <div className={`flex-1 max-w-[85%] sm:max-w-[70%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
                 <div className={`rounded-lg px-4 py-3 shadow-sm ${isUser
                         ? 'bg-[#F0F0F0] text-[#1B1B1B]'
                         : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'

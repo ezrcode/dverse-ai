@@ -69,7 +69,7 @@ export function EnvironmentSelector({
                 type="button"
                 onClick={() => setOpen(!open)}
                 className={cn(
-                    "w-full flex items-center justify-between gap-3 px-4 py-3 rounded-md border transition-all duration-200",
+                    "w-full flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-md border transition-all duration-200",
                     open
                         ? "border-secondary ring-2 ring-secondary ring-opacity-50"
                         : "border-border hover:border-secondary"

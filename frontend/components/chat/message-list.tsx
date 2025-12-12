@@ -23,7 +23,7 @@ export function MessageList({ messages, loading, userProfilePhotoUrl, environmen
     }, [messages, loading]);
 
     return (
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4">
             {messages.length === 0 && !loading && (
                 <div className="h-full flex items-center justify-center">
                     <div className="text-center space-y-4 max-w-md">
@@ -47,7 +47,7 @@ export function MessageList({ messages, loading, userProfilePhotoUrl, environmen
                     <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-secondary">
                         <Loader2 className="w-5 h-5 text-text-primary animate-spin" />
                     </div>
-                    <div className="flex-1 max-w-[70%]">
+                    <div className="flex-1 max-w-[85%] sm:max-w-[70%]">
                         <div className="rounded-lg px-4 py-3 shadow-sm bg-surface text-text-primary">
                             <div className="flex gap-2">
                                 <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
