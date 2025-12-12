@@ -23,7 +23,7 @@ export function MessageList({ messages, loading, userProfilePhotoUrl, environmen
     }, [messages, loading]);
 
     return (
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 min-w-0">
             {messages.length === 0 && !loading && (
                 <div className="h-full flex items-center justify-center">
                     <div className="text-center space-y-4 max-w-md">

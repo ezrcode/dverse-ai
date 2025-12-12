@@ -28,20 +28,20 @@ export function PromptInput({ onSend, disabled }: PromptInputProps) {
     };
 
     return (
-        <div className="border-t border-border bg-white p-3 sm:p-4">
-            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-                <div className="flex gap-3">
+        <div className="border-t border-border bg-white p-3 sm:p-4 flex-shrink-0">
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto w-full">
+                <div className="flex gap-2 sm:gap-3">
                     <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Pregunta sobre tu Dataverse..."
                         disabled={disabled}
-                        className="flex-1 resize-none rounded-md border border-border bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[56px] max-h-[200px]"
+                        className="flex-1 min-w-0 resize-none rounded-md border border-border bg-white px-3 py-2 sm:px-4 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-[56px] max-h-[150px] sm:max-h-[200px]"
                         rows={1}
                         style={{
                             height: 'auto',
-                            minHeight: '56px',
+                            minHeight: '48px',
                         }}
                         onInput={(e) => {
                             const target = e.target as HTMLTextAreaElement;

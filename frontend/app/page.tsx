@@ -137,13 +137,13 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white overflow-hidden">
       <Sidebar conversations={conversations} />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header with Environment Selector */}
-        <div className="border-b border-border bg-white p-4 sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto">
+        <div className="border-b border-border bg-white p-3 sm:p-4 sticky top-0 z-10 flex-shrink-0">
+          <div className="max-w-4xl mx-auto w-full">
             <EnvironmentSelector
               environments={environments}
               selectedIds={selectedEnvironmentIds}
