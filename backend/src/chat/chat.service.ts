@@ -20,7 +20,7 @@ export class ChatService {
         userId: string,
         sendMessageDto: SendMessageDto,
     ): Promise<ChatResponseDto> {
-        const { conversationId, environmentId, message } = sendMessageDto;
+        const { conversationId, environmentIds, message } = sendMessageDto;
 
         // Get user's Gemini API key if they have one configured
         const useFreeTier = await this.authService.shouldUseFreeTier(userId);
@@ -29,11 +29,15 @@ export class ChatService {
             userApiKey = (await this.authService.getGeminiApiKey(userId)) || undefined;
         }
 
-        // Get environment
-        const environment = await this.environmentsService.getEnvironmentEntity(
-            environmentId,
-            userId,
+        // Get all environments
+        const environments = await Promise.all(
+            environmentIds.map(envId => 
+                this.environmentsService.getEnvironmentEntity(envId, userId)
+            )
         );
+
+        // Use first environment ID for conversation association
+        const primaryEnvironmentId = environmentIds[0];
 
         // Create or get conversation
         let convId = conversationId;
@@ -41,7 +45,7 @@ export class ChatService {
 
         if (!convId) {
             const newConversation = await this.conversationsService.create(userId, {
-                environmentId,
+                environmentId: primaryEnvironmentId,
                 title: 'New Conversation',
             });
             convId = newConversation.id;
@@ -51,39 +55,78 @@ export class ChatService {
         // Save user message
         await this.conversationsService.addMessage(convId, 'user', message);
 
-        // Authenticate with D365
-        const accessToken = await this.dataverseService.authenticate(environment);
+        // Fetch metadata from all environments
+        const allMetadata: any[] = [];
+        const environmentSummaries: string[] = [];
 
-        // Fetch relevant metadata (pass environment for Flow API access)
-        const metadataResult = await this.dataverseService.fetchMetadata(
-            accessToken,
-            environment.organizationUrl,
-            message,
-            environment,
-        );
+        for (const environment of environments) {
+            try {
+                // Authenticate with D365
+                const accessToken = await this.dataverseService.authenticate(environment);
 
-        // Log for debugging
-        console.log('Metadata summary:', metadataResult.summary);
-        console.log('Entities found:', metadataResult.entities.length);
-        if (metadataResult.entities.length > 0 && metadataResult.entities[0].Attributes) {
-            console.log('First entity attributes count:', metadataResult.entities[0].Attributes.length);
+                // Fetch relevant metadata
+                const metadataResult = await this.dataverseService.fetchMetadata(
+                    accessToken,
+                    environment.organizationUrl,
+                    message,
+                    environment,
+                );
+
+                // Build environment metadata object
+                const envMetadata: any = {
+                    environmentName: environment.name,
+                    environmentUrl: environment.organizationUrl,
+                    entities: metadataResult.entities,
+                };
+                if (metadataResult.forms) envMetadata.forms = metadataResult.forms;
+                if (metadataResult.views) envMetadata.views = metadataResult.views;
+                if (metadataResult.workflows) envMetadata.workflows = metadataResult.workflows;
+
+                allMetadata.push(envMetadata);
+                environmentSummaries.push(`${environment.name}: ${metadataResult.summary}`);
+
+                // Log for debugging
+                console.log(`[${environment.name}] Metadata summary:`, metadataResult.summary);
+                console.log(`[${environment.name}] Entities found:`, metadataResult.entities.length);
+            } catch (error) {
+                console.error(`Error fetching metadata from ${environment.name}:`, error);
+                allMetadata.push({
+                    environmentName: environment.name,
+                    environmentUrl: environment.organizationUrl,
+                    error: `Could not fetch metadata: ${error.message}`,
+                });
+                environmentSummaries.push(`${environment.name}: Error - ${error.message}`);
+            }
         }
-        if (metadataResult.forms) console.log('Forms found:', metadataResult.forms.length);
-        if (metadataResult.views) console.log('Views found:', metadataResult.views.length);
-        if (metadataResult.workflows) console.log('Workflows found:', metadataResult.workflows.length);
 
-        // Format metadata for Gemini - include all available data
-        const fullMetadata: any = {
-            entities: metadataResult.entities,
-        };
-        if (metadataResult.forms) fullMetadata.forms = metadataResult.forms;
-        if (metadataResult.views) fullMetadata.views = metadataResult.views;
-        if (metadataResult.workflows) fullMetadata.workflows = metadataResult.workflows;
+        // Format metadata for Gemini
+        const isComparison = environments.length > 1;
+        let metadataText: string;
+        let systemContext: string;
 
-        const metadataText = JSON.stringify(fullMetadata, null, 2);
+        if (isComparison) {
+            // Multi-environment comparison mode
+            systemContext = `You are analyzing and comparing metadata from ${environments.length} Dynamics 365/Dataverse environments. 
+The user wants to compare these environments: ${environments.map(e => e.name).join(', ')}.
+Please highlight differences, similarities, and any important observations between the environments.
+Format your response in a clear, comparative way using tables when appropriate.`;
+            
+            metadataText = JSON.stringify({
+                comparisonMode: true,
+                environments: allMetadata,
+            }, null, 2);
+        } else {
+            // Single environment mode
+            systemContext = '';
+            metadataText = JSON.stringify(allMetadata[0], null, 2);
+        }
 
-        // Get AI response (pass user's API key if available)
-        const aiResponse = await this.geminiService.analyze(metadataText, message, userApiKey);
+        // Get AI response
+        const aiResponse = await this.geminiService.analyze(
+            metadataText, 
+            isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
+            userApiKey
+        );
 
         // Save AI message
         await this.conversationsService.addMessage(
@@ -91,14 +134,18 @@ export class ChatService {
             'assistant',
             aiResponse,
             {
-                entitiesCount: metadataResult.entities.length,
-                environmentId,
+                entitiesCount: allMetadata.reduce((acc, env) => acc + (env.entities?.length || 0), 0),
+                environmentIds: environmentIds,
+                comparisonMode: isComparison,
             },
         );
 
         // Generate title for new conversations
         if (isNewConversation) {
-            const title = await this.geminiService.generateTitle(message, userApiKey);
+            const titleContext = isComparison 
+                ? `Comparing ${environments.map(e => e.name).join(' vs ')}: ${message}`
+                : message;
+            const title = await this.geminiService.generateTitle(titleContext, userApiKey);
             await this.conversationsService.updateTitle(convId, userId, title);
         }
 

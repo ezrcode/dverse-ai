@@ -24,7 +24,7 @@ export default function HomePage() {
   };
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
+  const [selectedEnvironmentIds, setSelectedEnvironmentIds] = useState<string[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,8 +48,8 @@ export default function HomePage() {
       setProfile({ ...profileData, profilePhotoUrl: absPhoto });
 
       // Auto-select first environment if available
-      if (envsData.length > 0 && !selectedEnvironmentId) {
-        setSelectedEnvironmentId(envsData[0].id);
+      if (envsData.length > 0 && selectedEnvironmentIds.length === 0) {
+        setSelectedEnvironmentIds([envsData[0].id]);
       }
     } catch (error: any) {
       if (error.statusCode === 401) {
@@ -61,7 +61,7 @@ export default function HomePage() {
   };
 
   const handleSendMessage = async (message: string) => {
-    if (!selectedEnvironmentId) {
+    if (selectedEnvironmentIds.length === 0) {
       alert(t('chat_selectEnvFirst'));
       return;
     }
@@ -78,7 +78,7 @@ export default function HomePage() {
     try {
       const data: SendMessageData = {
         conversationId: currentConversationId || undefined,
-        environmentId: selectedEnvironmentId,
+        environmentIds: selectedEnvironmentIds,
         message,
       };
 
@@ -112,6 +112,14 @@ export default function HomePage() {
     setMessages([]);
   };
 
+  // Get environment names for export
+  const getEnvironmentNames = () => {
+    const names = environments
+      .filter(e => selectedEnvironmentIds.includes(e.id))
+      .map(e => e.name);
+    return names.length > 0 ? names.join('_vs_') : undefined;
+  };
+
   // Don't render anything while checking auth
   if (!isAuthenticated) {
     return null;
@@ -138,8 +146,8 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto">
             <EnvironmentSelector
               environments={environments}
-              selectedId={selectedEnvironmentId}
-              onSelect={setSelectedEnvironmentId}
+              selectedIds={selectedEnvironmentIds}
+              onSelect={setSelectedEnvironmentIds}
             />
             {environments.length === 0 && (
               <div className="mt-3 text-sm text-text-secondary text-center">
@@ -157,13 +165,13 @@ export default function HomePage() {
           messages={messages} 
           loading={loading} 
           userProfilePhotoUrl={profile?.profilePhotoUrl || null} 
-          environmentName={environments.find(e => e.id === selectedEnvironmentId)?.name}
+          environmentName={getEnvironmentNames()}
         />
 
         {/* Input */}
         <PromptInput
           onSend={handleSendMessage}
-          disabled={!selectedEnvironmentId || loading}
+          disabled={selectedEnvironmentIds.length === 0 || loading}
         />
       </div>
     </div>

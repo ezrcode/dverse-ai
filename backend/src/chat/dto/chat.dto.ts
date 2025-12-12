@@ -1,13 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsArray, ArrayMinSize } from 'class-validator';
 
 export class SendMessageDto {
     @IsOptional()
     @IsUUID()
     conversationId?: string;
 
-    @IsUUID()
-    @IsNotEmpty()
-    environmentId: string;
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsUUID('4', { each: true })
+    environmentIds: string[];
 
     @IsString()
     @IsNotEmpty()

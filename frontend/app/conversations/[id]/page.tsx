@@ -8,6 +8,7 @@ import { PromptInput } from '@/components/chat/prompt-input';
 import { EnvironmentSelector } from '@/components/environments/environment-selector';
 import { ApiClient } from '@/lib/api';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useI18n } from '@/lib/i18n';
 import type { Environment, Conversation, Message, SendMessageData, ChatResponse, User } from '@/types';
 import { Pencil } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export default function ConversationPage() {
     const params = useParams();
     const conversationId = params.id as string;
     const isAuthenticated = useRequireAuth();
+    const { t } = useI18n();
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
     const toAbsolute = (url: string | null) => {
         if (!url) return null;
@@ -27,7 +29,7 @@ export default function ConversationPage() {
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
-    const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
+    const [selectedEnvironmentIds, setSelectedEnvironmentIds] = useState<string[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
@@ -56,9 +58,9 @@ export default function ConversationPage() {
 
             // Set the environment from the conversation
             if (convData.environmentId) {
-                setSelectedEnvironmentId(convData.environmentId);
+                setSelectedEnvironmentIds([convData.environmentId]);
             } else if (envsData.length > 0) {
-                setSelectedEnvironmentId(envsData[0].id);
+                setSelectedEnvironmentIds([envsData[0].id]);
             }
         } catch (error: any) {
             if (error.statusCode === 401) {
@@ -73,7 +75,7 @@ export default function ConversationPage() {
 
     const handleRename = async () => {
         if (!currentConversation) return;
-        const newTitle = prompt('Nuevo título de la conversación:', currentConversation.title);
+        const newTitle = prompt(t('sidebar_rename') + ':', currentConversation.title);
         if (!newTitle || newTitle.trim() === '' || newTitle === currentConversation.title) return;
         setRenaming(true);
         try {
@@ -92,8 +94,8 @@ export default function ConversationPage() {
     };
 
     const handleSendMessage = async (message: string) => {
-        if (!selectedEnvironmentId) {
-            alert('Please select an environment first');
+        if (selectedEnvironmentIds.length === 0) {
+            alert(t('chat_selectEnvFirst'));
             return;
         }
 
@@ -109,7 +111,7 @@ export default function ConversationPage() {
         try {
             const data: SendMessageData = {
                 conversationId: conversationId,
-                environmentId: selectedEnvironmentId,
+                environmentIds: selectedEnvironmentIds,
                 message,
             };
 
@@ -134,6 +136,14 @@ export default function ConversationPage() {
         }
     };
 
+    // Get environment names for export
+    const getEnvironmentNames = () => {
+        const names = environments
+            .filter(e => selectedEnvironmentIds.includes(e.id))
+            .map(e => e.name);
+        return names.length > 0 ? names.join('_vs_') : undefined;
+    };
+
     if (!isAuthenticated) {
         return null;
     }
@@ -143,7 +153,7 @@ export default function ConversationPage() {
             <div className="h-screen flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <div className="text-6xl animate-pulse">🔮</div>
-                    <div className="text-[#666666]">Loading conversation...</div>
+                    <div className="text-[#666666]">{t('chat_loading')}</div>
                 </div>
             </div>
         );
@@ -166,17 +176,17 @@ export default function ConversationPage() {
                                     onClick={handleRename}
                                     className="text-[#666666] hover:text-[#0078D4] flex items-center gap-1 text-sm"
                                     disabled={renaming}
-                                    title="Renombrar conversación"
+                                    title={t('sidebar_rename')}
                                 >
                                     <Pencil className="w-4 h-4" />
-                                    {renaming ? 'Guardando...' : 'Renombrar'}
+                                    {renaming ? '...' : t('sidebar_rename')}
                                 </button>
                             </div>
                         )}
                         <EnvironmentSelector
                             environments={environments}
-                            selectedId={selectedEnvironmentId}
-                            onSelect={setSelectedEnvironmentId}
+                            selectedIds={selectedEnvironmentIds}
+                            onSelect={setSelectedEnvironmentIds}
                         />
                     </div>
                 </div>
@@ -186,16 +196,15 @@ export default function ConversationPage() {
                     messages={messages} 
                     loading={loading} 
                     userProfilePhotoUrl={profile?.profilePhotoUrl || null} 
-                    environmentName={environments.find(e => e.id === selectedEnvironmentId)?.name}
+                    environmentName={getEnvironmentNames()}
                 />
 
                 {/* Input */}
                 <PromptInput
                     onSend={handleSendMessage}
-                    disabled={!selectedEnvironmentId || loading}
+                    disabled={selectedEnvironmentIds.length === 0 || loading}
                 />
             </div>
         </div>
     );
 }
-

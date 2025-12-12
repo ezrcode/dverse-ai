@@ -72,7 +72,7 @@ export interface UpdateEnvironmentData {
 
 export interface SendMessageData {
     conversationId?: string;
-    environmentId: string;
+    environmentIds: string[];
     message: string;
 }
 
