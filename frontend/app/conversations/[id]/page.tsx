@@ -165,7 +165,7 @@ export default function ConversationPage() {
 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Header with Conversation Title and Environment Selector */}
-                <div className="border-b border-[#E0E0E0] bg-white p-3 sm:p-4 sticky top-0 z-10 flex-shrink-0">
+                <div className="border-b border-[#E0E0E0] bg-white pl-14 pr-3 py-3 sm:pl-4 sm:pr-4 sm:py-4 sticky top-0 z-10 flex-shrink-0">
                     <div className="max-w-4xl mx-auto w-full">
                         {currentConversation && (
                             <div className="flex items-center gap-2 sm:gap-3 mb-3">

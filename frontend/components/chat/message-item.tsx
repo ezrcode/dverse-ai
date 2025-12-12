@@ -33,7 +33,7 @@ export function MessageItem({ message, userProfilePhotoUrl, environmentName }: M
     };
 
     return (
-        <div className={`flex gap-2 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-4 sm:mb-6 min-w-0`}>
+        <div className={`flex gap-2 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-4 sm:mb-6 w-full`}>
             {/* Avatar */}
             <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center ${isUser ? 'bg-[#E5E5E5]' : 'bg-[#FF6B35]'
                 }`}>
@@ -45,26 +45,26 @@ export function MessageItem({ message, userProfilePhotoUrl, environmentName }: M
                             className="object-cover w-8 h-8 sm:w-10 sm:h-10"
                         />
                     ) : (
-                        <User className="w-5 h-5 text-[#1B1B1B]" />
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#1B1B1B]" />
                     )
                 ) : (
-                    <Bot className="w-5 h-5 text-white" />
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 )}
             </div>
 
-            {/* Message Content */}
-            <div className={`flex-1 min-w-0 max-w-[85%] sm:max-w-[70%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
-                <div className={`rounded-lg px-3 py-2 sm:px-4 sm:py-3 shadow-sm overflow-hidden ${isUser
+            {/* Message Content - use calc to ensure it doesn't overflow */}
+            <div className={`min-w-0 max-w-[calc(100%-3rem)] sm:max-w-[calc(100%-4rem)] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1 sm:gap-2`}>
+                <div className={`rounded-lg px-3 py-2 sm:px-4 sm:py-3 shadow-sm w-full ${isUser
                         ? 'bg-[#F0F0F0] text-[#1B1B1B]'
                         : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'
                     }`}>
-                    <div className="text-sm break-words overflow-x-auto prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-code:bg-[#F5F5F5] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[#FF6B35] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1A1A1A] prose-pre:text-white prose-pre:rounded-lg prose-pre:overflow-x-auto prose-table:text-xs">
+                    <div className="text-sm break-words overflow-hidden prose prose-sm max-w-full prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-code:bg-[#F5F5F5] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[#FF6B35] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1A1A1A] prose-pre:text-white prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:text-xs prose-table:overflow-x-auto">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {message.content}
                         </ReactMarkdown>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 px-2">
+                <div className="flex items-center gap-2 px-1 sm:px-2">
                     <span className="text-xs text-[#999999]">
                         {format(new Date(message.createdAt), 'h:mm a')}
                     </span>
