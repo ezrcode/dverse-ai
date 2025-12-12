@@ -11,15 +11,25 @@ import { useI18n } from '@/lib/i18n';
 interface MessageItemProps {
     message: Message;
     userProfilePhotoUrl?: string | null;
+    environmentName?: string;
 }
 
-export function MessageItem({ message, userProfilePhotoUrl }: MessageItemProps) {
+export function MessageItem({ message, userProfilePhotoUrl, environmentName }: MessageItemProps) {
     const isUser = message.role === 'user';
     const { t } = useI18n();
     const canExport = !isUser && hasExportableData(message.content);
 
     const handleExport = () => {
-        exportToExcel(message.content, 'dverse-respuesta');
+        // Formato: NombreEntorno-yyyymmddhhmm
+        const now = new Date();
+        const timestamp = now.getFullYear().toString() +
+            String(now.getMonth() + 1).padStart(2, '0') +
+            String(now.getDate()).padStart(2, '0') +
+            String(now.getHours()).padStart(2, '0') +
+            String(now.getMinutes()).padStart(2, '0');
+        
+        const envName = environmentName?.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_') || 'DVerse';
+        exportToExcel(message.content, `${envName}-${timestamp}`);
     };
 
     return (

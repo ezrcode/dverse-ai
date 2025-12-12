@@ -10,9 +10,10 @@ interface MessageListProps {
     messages: Message[];
     loading?: boolean;
     userProfilePhotoUrl?: string | null;
+    environmentName?: string;
 }
 
-export function MessageList({ messages, loading, userProfilePhotoUrl }: MessageListProps) {
+export function MessageList({ messages, loading, userProfilePhotoUrl, environmentName }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { t } = useI18n();
 
@@ -38,7 +39,7 @@ export function MessageList({ messages, loading, userProfilePhotoUrl }: MessageL
             )}
 
             {messages.map((message, index) => (
-                <MessageItem key={index} message={message} userProfilePhotoUrl={userProfilePhotoUrl} />
+                <MessageItem key={index} message={message} userProfilePhotoUrl={userProfilePhotoUrl} environmentName={environmentName} />
             ))}
 
             {loading && (

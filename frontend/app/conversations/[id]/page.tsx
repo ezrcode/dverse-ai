@@ -182,7 +182,12 @@ export default function ConversationPage() {
                 </div>
 
                 {/* Messages */}
-                <MessageList messages={messages} loading={loading} userProfilePhotoUrl={profile?.profilePhotoUrl || null} />
+                <MessageList 
+                    messages={messages} 
+                    loading={loading} 
+                    userProfilePhotoUrl={profile?.profilePhotoUrl || null} 
+                    environmentName={environments.find(e => e.id === selectedEnvironmentId)?.name}
+                />
 
                 {/* Input */}
                 <PromptInput

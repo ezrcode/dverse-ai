@@ -193,7 +193,6 @@ export function exportToExcel(content: string, fileName: string = 'dverse-export
     }
     
     // Generar y descargar archivo
-    const timestamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(workbook, `${fileName}-${timestamp}.xlsx`);
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
 }
 
