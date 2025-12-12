@@ -19,6 +19,8 @@ const translations: Record<Lang, Record<string, string>> = {
         sidebar_delete: 'Eliminar',
         sidebar_lang_es: 'Español',
         sidebar_lang_en: 'Inglés',
+        // Export
+        exportToExcel: 'Exportar a Excel',
         // Home / Chat
         chat_loading: 'Cargando DVerse-ai...',
         chat_emptyTitle: 'Bienvenido a DVerse-ai',
@@ -163,6 +165,8 @@ const translations: Record<Lang, Record<string, string>> = {
         sidebar_delete: 'Delete',
         sidebar_lang_es: 'Spanish',
         sidebar_lang_en: 'English',
+        // Export
+        exportToExcel: 'Export to Excel',
         // Home / Chat
         chat_loading: 'Loading DVerse-ai...',
         chat_emptyTitle: 'Welcome to DVerse-ai',

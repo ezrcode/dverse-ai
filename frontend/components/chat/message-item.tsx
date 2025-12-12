@@ -2,9 +2,11 @@
 
 import { Message } from '@/types';
 import { format } from 'date-fns';
-import { User, Bot } from 'lucide-react';
+import { User, Bot, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { hasExportableData, exportToExcel } from '@/lib/excelExport';
+import { useI18n } from '@/lib/i18n';
 
 interface MessageItemProps {
     message: Message;
@@ -13,6 +15,12 @@ interface MessageItemProps {
 
 export function MessageItem({ message, userProfilePhotoUrl }: MessageItemProps) {
     const isUser = message.role === 'user';
+    const { t } = useI18n();
+    const canExport = !isUser && hasExportableData(message.content);
+
+    const handleExport = () => {
+        exportToExcel(message.content, 'dverse-respuesta');
+    };
 
     return (
         <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-6`}>
@@ -46,8 +54,20 @@ export function MessageItem({ message, userProfilePhotoUrl }: MessageItemProps) 
                         </ReactMarkdown>
                     </div>
                 </div>
-                <div className="text-xs text-[#999999] px-2">
-                    {format(new Date(message.createdAt), 'h:mm a')}
+                <div className="flex items-center gap-2 px-2">
+                    <span className="text-xs text-[#999999]">
+                        {format(new Date(message.createdAt), 'h:mm a')}
+                    </span>
+                    {canExport && (
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-1 text-xs text-[#FF6B35] hover:text-[#E55A2B] transition-colors"
+                            title={t('exportToExcel')}
+                        >
+                            <Download className="w-3 h-3" />
+                            <span>Excel</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
