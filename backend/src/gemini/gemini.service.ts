@@ -26,10 +26,10 @@ export class GeminiService {
     /**
      * Analyze Dataverse metadata and answer user question
      */
-    async analyze(metadata: string, question: string, userApiKey?: string): Promise<string> {
+    async analyze(metadata: string, question: string, userApiKey?: string, image?: string): Promise<string> {
         try {
             const model = this.getModel(userApiKey);
-            const prompt = `You are an expert Microsoft Dynamics 365 and Dataverse analyst. You help users understand their Dataverse metadata and answer technical questions.
+            const promptText = `You are an expert Microsoft Dynamics 365 and Dataverse analyst. You help users understand their Dataverse metadata and answer technical questions.
 
 Dataverse Metadata:
 ${metadata}
@@ -43,10 +43,33 @@ Instructions:
 - Format your response in a clear, structured way
 - Include code examples or entity/field names when relevant
 - Be concise but thorough
+- If an image is provided, analyze it in the context of the question and metadata
 
 Answer:`;
 
-            const result = await model.generateContent(prompt);
+            const parts: any[] = [promptText];
+
+            if (image) {
+                // Handle base64 image
+                const matches = image.match(/^data:(.+);base64,(.+)$/);
+                if (matches) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: matches[1],
+                            data: matches[2]
+                        }
+                    });
+                } else {
+                    parts.push({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: image
+                        }
+                    });
+                }
+            }
+
+            const result = await model.generateContent(parts);
             const response = await result.response;
             return response.text();
         } catch (error) {
@@ -146,8 +169,8 @@ Which entities are most relevant to answering this query? Return only the entity
     }> {
         try {
             const model = this.getModel(userApiKey);
-            
-            const entityContext = entityInfo.map(e => 
+
+            const entityContext = entityInfo.map(e =>
                 `Entity: ${e.logicalName} (${e.displayName})\nAttributes: ${e.attributes.map(a => `${a.logicalName}(${a.displayName}):${a.type}`).join(', ')}`
             ).join('\n\n');
 
@@ -198,10 +221,10 @@ If the query doesn't need data, return:
             const result = await model.generateContent(prompt);
             const response = await result.response;
             let text = response.text().trim();
-            
+
             // Clean up response - remove markdown code blocks if present
             text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-            
+
             try {
                 const parsed = JSON.parse(text);
                 return {
@@ -235,10 +258,11 @@ If the query doesn't need data, return:
         dataResults: { entityName: string; records: any[]; totalCount?: number; query: string; error?: string }[],
         question: string,
         userApiKey?: string,
+        image?: string,
     ): Promise<string> {
         try {
             const model = this.getModel(userApiKey);
-            
+
             const dataContext = dataResults.map(dr => {
                 if (dr.error) {
                     return `Entity: ${dr.entityName}\nError: ${dr.error}`;
@@ -246,7 +270,7 @@ If the query doesn't need data, return:
                 return `Entity: ${dr.entityName}\nTotal Records: ${dr.totalCount || dr.records.length}\nSample Data (${dr.records.length} records):\n${JSON.stringify(dr.records.slice(0, 20), null, 2)}`;
             }).join('\n\n---\n\n');
 
-            const prompt = `You are an expert Microsoft Dynamics 365 analyst. Answer the user's question using the provided metadata AND actual data records.
+            const promptText = `You are an expert Microsoft Dynamics 365 analyst. Answer the user's question using the provided metadata AND actual data records.
 
 METADATA (Schema Information):
 ${metadata}
@@ -265,11 +289,34 @@ Instructions:
 - If there are too many records, summarize and show key examples
 - Format numbers and dates nicely
 - If there was an error fetching data, explain it
+- If an image is provided, analyze it in the context of the data and question
 
 Answer:`;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
+            const parts: any[] = [promptText];
+
+            if (image) {
+                // Handle base64 image
+                const matches = image.match(/^data:(.+);base64,(.+)$/);
+                if (matches) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: matches[1],
+                            data: matches[2]
+                        }
+                    });
+                } else {
+                    parts.push({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: image
+                        }
+                    });
+                }
+            }
+
+            const result = await model.generateContent(parts);
+            const response = result.response;
             return response.text();
         } catch (error) {
             console.error('Gemini Data Analysis Error:', error);

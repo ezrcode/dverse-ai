@@ -13,6 +13,10 @@ export class SendMessageDto {
     @IsString()
     @IsNotEmpty()
     message: string;
+
+    @IsOptional()
+    @IsString()
+    image?: string;
 }
 
 export class ChatResponseDto {

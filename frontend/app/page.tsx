@@ -60,7 +60,7 @@ export default function HomePage() {
     }
   };
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, image?: string) => {
     if (selectedEnvironmentIds.length === 0) {
       alert(t('chat_selectEnvFirst'));
       return;
@@ -70,6 +70,9 @@ export default function HomePage() {
     const userMessage: Message = {
       role: 'user',
       content: message,
+      // Create a temporary data URL for the image if it's not already one (though it should be)
+      // or just trust it's a data URL from PromptInput
+      metadata: image ? { image } : undefined,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -80,6 +83,7 @@ export default function HomePage() {
         conversationId: currentConversationId || undefined,
         environmentIds: selectedEnvironmentIds,
         message,
+        image,
       };
 
       const response = await ApiClient.post<ChatResponse>('/chat/message', data);
@@ -161,10 +165,10 @@ export default function HomePage() {
         </div>
 
         {/* Messages */}
-        <MessageList 
-          messages={messages} 
-          loading={loading} 
-          userProfilePhotoUrl={profile?.profilePhotoUrl || null} 
+        <MessageList
+          messages={messages}
+          loading={loading}
+          userProfilePhotoUrl={profile?.profilePhotoUrl || null}
           environmentName={getEnvironmentNames()}
         />
 

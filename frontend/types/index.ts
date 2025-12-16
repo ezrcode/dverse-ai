@@ -24,6 +24,7 @@ export interface Message {
     role: 'user' | 'assistant';
     content: string;
     createdAt: string;
+    metadata?: Record<string, any>;
 }
 
 export interface Conversation {
@@ -74,6 +75,7 @@ export interface SendMessageData {
     conversationId?: string;
     environmentIds: string[];
     message: string;
+    image?: string;
 }
 
 export interface ChatResponse {

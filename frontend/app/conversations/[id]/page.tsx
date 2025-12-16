@@ -93,7 +93,7 @@ export default function ConversationPage() {
         }
     };
 
-    const handleSendMessage = async (message: string) => {
+    const handleSendMessage = async (message: string, image?: string) => {
         if (selectedEnvironmentIds.length === 0) {
             alert(t('chat_selectEnvFirst'));
             return;
@@ -103,6 +103,7 @@ export default function ConversationPage() {
         const userMessage: Message = {
             role: 'user',
             content: message,
+            metadata: image ? { image } : undefined,
             createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, userMessage]);
@@ -113,6 +114,7 @@ export default function ConversationPage() {
                 conversationId: conversationId,
                 environmentIds: selectedEnvironmentIds,
                 message,
+                image,
             };
 
             const response = await ApiClient.post<ChatResponse>('/chat/message', data);
@@ -192,10 +194,10 @@ export default function ConversationPage() {
                 </div>
 
                 {/* Messages */}
-                <MessageList 
-                    messages={messages} 
-                    loading={loading} 
-                    userProfilePhotoUrl={profile?.profilePhotoUrl || null} 
+                <MessageList
+                    messages={messages}
+                    loading={loading}
+                    userProfilePhotoUrl={profile?.profilePhotoUrl || null}
                     environmentName={getEnvironmentNames()}
                 />
 

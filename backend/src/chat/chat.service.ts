@@ -31,7 +31,7 @@ export class ChatService {
 
         // Get all environments
         const environments = await Promise.all(
-            environmentIds.map(envId => 
+            environmentIds.map(envId =>
                 this.environmentsService.getEnvironmentEntity(envId, userId)
             )
         );
@@ -53,7 +53,12 @@ export class ChatService {
         }
 
         // Save user message
-        await this.conversationsService.addMessage(convId, 'user', message);
+        await this.conversationsService.addMessage(
+            convId,
+            'user',
+            message,
+            sendMessageDto.image ? { image: sendMessageDto.image } : undefined
+        );
 
         // Fetch metadata from all environments
         const allMetadata: any[] = [];
@@ -105,7 +110,7 @@ export class ChatService {
 
                     if (queryIntent.needsData && queryIntent.entities.length > 0) {
                         console.log(`[${environment.name}] Fetching actual data...`);
-                        
+
                         const dataResults: any[] = [];
                         for (const entityQuery of queryIntent.entities) {
                             try {
@@ -153,7 +158,7 @@ export class ChatService {
                                 });
                             }
                         }
-                        
+
                         if (dataResults.length > 0) {
                             allDataResults.push({ envName: environment.name, results: dataResults });
                             envMetadata.dataFetched = true;
@@ -190,7 +195,7 @@ export class ChatService {
 The user wants to compare these environments: ${environments.map(e => e.name).join(', ')}.
 Please highlight differences, similarities, and any important observations between the environments.
 Format your response in a clear, comparative way using tables when appropriate.`;
-            
+
             metadataText = JSON.stringify({
                 comparisonMode: true,
                 environments: allMetadata,
@@ -203,25 +208,27 @@ Format your response in a clear, comparative way using tables when appropriate.`
 
         // Get AI response - use data-aware analysis if we have data
         let aiResponse: string;
-        
+
         if (allDataResults.length > 0) {
             // We have actual data, use the data-aware analysis
-            const flatDataResults = allDataResults.flatMap(dr => 
+            const flatDataResults = allDataResults.flatMap(dr =>
                 dr.results.map(r => ({ ...r, environmentName: dr.envName }))
             );
-            
+
             aiResponse = await this.geminiService.analyzeWithData(
                 metadataText,
                 flatDataResults,
                 isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
                 userApiKey,
+                sendMessageDto.image,
             );
         } else {
             // Metadata-only analysis
             aiResponse = await this.geminiService.analyze(
-                metadataText, 
+                metadataText,
                 isComparison ? `${systemContext}\n\nUser question: ${message}` : message,
-                userApiKey
+                userApiKey,
+                sendMessageDto.image,
             );
         }
 
@@ -240,7 +247,7 @@ Format your response in a clear, comparative way using tables when appropriate.`
 
         // Generate title for new conversations
         if (isNewConversation) {
-            const titleContext = isComparison 
+            const titleContext = isComparison
                 ? `Comparing ${environments.map(e => e.name).join(' vs ')}: ${message}`
                 : message;
             const title = await this.geminiService.generateTitle(titleContext, userApiKey);

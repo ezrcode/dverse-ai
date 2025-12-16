@@ -27,7 +27,7 @@ export function MessageItem({ message, userProfilePhotoUrl, environmentName }: M
             String(now.getDate()).padStart(2, '0') +
             String(now.getHours()).padStart(2, '0') +
             String(now.getMinutes()).padStart(2, '0');
-        
+
         const envName = environmentName?.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_') || 'DVerse';
         exportToExcel(message.content, `${envName}-${timestamp}`);
     };
@@ -55,9 +55,26 @@ export function MessageItem({ message, userProfilePhotoUrl, environmentName }: M
             {/* Message Content - use calc to ensure it doesn't overflow */}
             <div className={`min-w-0 max-w-[calc(100%-3rem)] sm:max-w-[calc(100%-4rem)] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1 sm:gap-2`}>
                 <div className={`rounded-lg px-3 py-2 sm:px-4 sm:py-3 shadow-sm w-full ${isUser
-                        ? 'bg-[#F0F0F0] text-[#1B1B1B]'
-                        : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'
+                    ? 'bg-[#F0F0F0] text-[#1B1B1B]'
+                    : 'bg-white text-[#1B1B1B] border border-[#E0E0E0]'
                     }`}>
+                    {message.metadata?.image && (
+                        <div className="mb-2">
+                            <img
+                                src={message.metadata.image}
+                                alt="Attachment"
+                                className="max-w-full h-auto max-h-60 rounded-md object-contain cursor-pointer"
+                                onClick={() => {
+                                    const w = window.open();
+                                    if (w) {
+                                        const img = new Image();
+                                        img.src = message.metadata?.image;
+                                        w.document.body.appendChild(img);
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
                     <div className="text-sm break-words overflow-hidden prose prose-sm max-w-full prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-code:bg-[#F5F5F5] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[#FF6B35] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#1A1A1A] prose-pre:text-white prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-table:text-xs prose-table:overflow-x-auto">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {message.content}
