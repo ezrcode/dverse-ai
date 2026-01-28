@@ -96,6 +96,8 @@ export default function QueryDesignerPage() {
     const [queryName, setQueryName] = useState('');
     const [queryDescription, setQueryDescription] = useState('');
     const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
+    const [entitySearch, setEntitySearch] = useState('');
+    const [attributeSearch, setAttributeSearch] = useState('');
 
     // Load initial data
     useEffect(() => {
@@ -190,6 +192,12 @@ export default function QueryDesignerPage() {
         setFilters([]);
         setOrderBy([]);
         setResult(null);
+        // Auto-expand the selected entity
+        setExpandedEntities(prev => {
+            const next = new Set(prev);
+            next.add(entityName);
+            return next;
+        });
         await loadAttributes(entityName);
         await loadRelationships(entityName);
     };
@@ -493,16 +501,17 @@ export default function QueryDesignerPage() {
                 {/* Main content */}
                 <div className="flex-1 flex overflow-hidden">
                     {/* Left panel - Entity browser */}
-                    <div className="w-80 border-r border-border bg-white overflow-y-auto">
+                    <div className="w-80 border-r border-border bg-white overflow-y-auto flex flex-col">
                         <div className="p-4 border-b border-border">
-                            <h2 className="font-semibold text-text-primary mb-2">Entidades</h2>
+                            <h2 className="font-semibold text-text-primary mb-2">
+                                Entidades ({entities.length})
+                            </h2>
                             <input
                                 type="text"
                                 placeholder="Buscar entidad..."
+                                value={entitySearch}
+                                onChange={(e) => setEntitySearch(e.target.value)}
                                 className="w-full border border-border rounded-md px-3 py-2 text-sm"
-                                onChange={(e) => {
-                                    // Filter entities (simplified)
-                                }}
                             />
                         </div>
 
@@ -511,8 +520,14 @@ export default function QueryDesignerPage() {
                                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                             </div>
                         ) : (
-                            <div className="p-2">
-                                {entities.slice(0, 100).map(entity => (
+                            <div className="flex-1 overflow-y-auto p-2">
+                                {entities
+                                    .filter(entity => 
+                                        !entitySearch || 
+                                        entity.displayName.toLowerCase().includes(entitySearch.toLowerCase()) ||
+                                        entity.logicalName.toLowerCase().includes(entitySearch.toLowerCase())
+                                    )
+                                    .map(entity => (
                                     <div key={entity.logicalName} className="mb-1">
                                         <div
                                             className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-100 ${
@@ -544,26 +559,51 @@ export default function QueryDesignerPage() {
                                         {expandedEntities.has(entity.logicalName) && (
                                             <div className="ml-6 mt-1 space-y-0.5">
                                                 {loadingAttributes === entity.logicalName ? (
-                                                    <div className="text-xs text-gray-500 px-2 py-1">Cargando...</div>
+                                                    <div className="text-xs text-gray-500 px-2 py-1">Cargando atributos...</div>
                                                 ) : (
-                                                    attributesCache[entity.logicalName]?.slice(0, 50).map(attr => (
-                                                        <div
-                                                            key={attr.logicalName}
-                                                            className={`flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-100 ${
-                                                                isFieldSelected('main', attr.logicalName) ? 'bg-green-100 text-green-700' : ''
-                                                            }`}
-                                                            onClick={() => toggleField('main', attr.logicalName, attr.displayName)}
-                                                        >
+                                                    <>
+                                                        {/* Attribute search when expanded */}
+                                                        {primaryEntity === entity.logicalName && attributesCache[entity.logicalName]?.length > 20 && (
                                                             <input
-                                                                type="checkbox"
-                                                                checked={isFieldSelected('main', attr.logicalName)}
-                                                                onChange={() => {}}
-                                                                className="rounded"
+                                                                type="text"
+                                                                placeholder="Buscar campo..."
+                                                                value={attributeSearch}
+                                                                onChange={(e) => setAttributeSearch(e.target.value)}
+                                                                className="w-full border border-border rounded px-2 py-1 text-xs mb-1"
+                                                                onClick={(e) => e.stopPropagation()}
                                                             />
-                                                            <span className="truncate">{attr.displayName}</span>
-                                                            <span className="text-gray-400 text-[10px]">{attr.attributeType}</span>
-                                                        </div>
-                                                    ))
+                                                        )}
+                                                        {attributesCache[entity.logicalName]
+                                                            ?.filter(attr => 
+                                                                !attributeSearch ||
+                                                                attr.displayName.toLowerCase().includes(attributeSearch.toLowerCase()) ||
+                                                                attr.logicalName.toLowerCase().includes(attributeSearch.toLowerCase())
+                                                            )
+                                                            .slice(0, 100)
+                                                            .map(attr => (
+                                                            <div
+                                                                key={attr.logicalName}
+                                                                className={`flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-100 ${
+                                                                    isFieldSelected('main', attr.logicalName) ? 'bg-green-100 text-green-700' : ''
+                                                                }`}
+                                                                onClick={() => toggleField('main', attr.logicalName, attr.displayName)}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isFieldSelected('main', attr.logicalName)}
+                                                                    onChange={() => {}}
+                                                                    className="rounded"
+                                                                />
+                                                                <span className="truncate flex-1">{attr.displayName}</span>
+                                                                <span className="text-gray-400 text-[10px]">{attr.attributeType}</span>
+                                                            </div>
+                                                        ))}
+                                                        {attributesCache[entity.logicalName]?.length > 100 && !attributeSearch && (
+                                                            <div className="text-xs text-gray-400 px-2 py-1">
+                                                                +{attributesCache[entity.logicalName].length - 100} más (usa la búsqueda)
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         )}
@@ -586,7 +626,11 @@ export default function QueryDesignerPage() {
                                 </CardHeader>
                                 <CardContent className="py-2">
                                     {selectedFields.length === 0 ? (
-                                        <p className="text-xs text-gray-500">Selecciona campos de las entidades</p>
+                                        <p className="text-xs text-gray-500">
+                                            {primaryEntity 
+                                                ? '👆 Marca los campos que deseas consultar' 
+                                                : '👈 Primero selecciona una entidad'}
+                                        </p>
                                     ) : (
                                         <div className="space-y-1">
                                             {selectedFields.map((field, idx) => (
