@@ -95,3 +95,110 @@ export interface UpdateSettingsData {
     geminiApiKey?: string;
     useFreeTier?: boolean;
 }
+
+// ============== Query Designer Types ==============
+
+export interface EntityMetadata {
+    logicalName: string;
+    displayName: string;
+    entitySetName: string;
+    primaryIdAttribute: string;
+    primaryNameAttribute: string;
+    description?: string;
+    isCustomEntity: boolean;
+}
+
+export interface AttributeMetadata {
+    logicalName: string;
+    displayName: string;
+    attributeType: string;
+    isPrimaryId: boolean;
+    isPrimaryName: boolean;
+    isRequired: boolean;
+    isCustomAttribute: boolean;
+    description?: string;
+    targets?: string[];
+    options?: { value: number; label: string }[];
+}
+
+export interface RelationshipMetadata {
+    schemaName: string;
+    relationshipType: 'OneToMany' | 'ManyToOne' | 'ManyToMany';
+    referencingEntity: string;
+    referencingAttribute: string;
+    referencedEntity: string;
+    referencedAttribute: string;
+    displayName?: string;
+}
+
+export interface QueryField {
+    entityAlias: string;
+    fieldName: string;
+    displayName?: string;
+    aggregation?: 'count' | 'sum' | 'avg' | 'min' | 'max';
+}
+
+export interface QueryJoin {
+    fromEntityAlias: string;
+    fromField: string;
+    toEntity: string;
+    toEntityAlias: string;
+    toField: string;
+    joinType?: 'inner' | 'left';
+}
+
+export type FilterOperator = 
+    | 'eq' | 'ne' | 'gt' | 'ge' | 'lt' | 'le' 
+    | 'contains' | 'startswith' | 'endswith' 
+    | 'null' | 'notnull';
+
+export interface QueryFilter {
+    entityAlias: string;
+    fieldName: string;
+    operator: FilterOperator;
+    value?: any;
+    logicalOperator?: 'and' | 'or';
+}
+
+export interface QuerySort {
+    entityAlias: string;
+    fieldName: string;
+    direction?: 'asc' | 'desc';
+}
+
+export interface QueryDefinition {
+    environmentId: string;
+    primaryEntity: string;
+    primaryEntityAlias?: string;
+    fields: QueryField[];
+    joins?: QueryJoin[];
+    filters?: QueryFilter[];
+    orderBy?: QuerySort[];
+    top?: number;
+    skip?: number;
+}
+
+export interface SavedQuery {
+    id: string;
+    name: string;
+    description?: string;
+    environmentId: string;
+    definition: QueryDefinition;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface QueryResult {
+    columns: {
+        name: string;
+        displayName: string;
+        type: string;
+        entityAlias: string;
+    }[];
+    rows: Record<string, any>[];
+    totalCount?: number;
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    executionTime: number;
+}

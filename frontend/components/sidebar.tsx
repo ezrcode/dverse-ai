@@ -14,6 +14,7 @@ import {
     Pencil,
     Menu,
     X,
+    TableProperties,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiClient } from '@/lib/api';
@@ -191,6 +192,19 @@ export function Sidebar({ conversations = [] }: SidebarProps) {
                         >
                             <Plus className="w-4 h-4" />
                             {t('sidebar_addEnv')}
+                        </Link>
+                        <Link
+                            href="/query-designer"
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                                isActive('/query-designer')
+                                    ? "bg-primary-light text-primary border-l-4 border-primary"
+                                    : "text-text-secondary hover:bg-surface hover:text-text-primary"
+                            )}
+                            onClick={closeMobile}
+                        >
+                            <TableProperties className="w-4 h-4" />
+                            Query Designer
                         </Link>
                     </nav>
                 </div>

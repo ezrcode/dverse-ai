@@ -8,10 +8,12 @@ import { EnvironmentsModule } from './environments/environments.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ChatModule } from './chat/chat.module';
 import { ReportsModule } from './reports/reports.module';
+import { QueryDesignerModule } from './query-designer/query-designer.module';
 import { User } from './auth/user.entity';
 import { Environment } from './environments/environment.entity';
 import { Conversation } from './conversations/conversation.entity';
 import { Message } from './conversations/message.entity';
+import { SavedQuery } from './query-designer/saved-query.entity';
 
 @Module({
   imports: [
@@ -23,7 +25,7 @@ import { Message } from './conversations/message.entity';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
-        entities: [User, Environment, Conversation, Message],
+        entities: [User, Environment, Conversation, Message, SavedQuery],
         synchronize: true, // Set to false in production, use migrations instead
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),
@@ -34,6 +36,7 @@ import { Message } from './conversations/message.entity';
     ConversationsModule,
     ChatModule,
     ReportsModule,
+    QueryDesignerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
