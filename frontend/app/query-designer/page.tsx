@@ -562,24 +562,31 @@ export default function QueryDesignerPage() {
                                                     <div className="text-xs text-gray-500 px-2 py-1">Cargando atributos...</div>
                                                 ) : (
                                                     <>
-                                                        {/* Attribute search when expanded */}
-                                                        {primaryEntity === entity.logicalName && attributesCache[entity.logicalName]?.length > 20 && (
+                                                        {/* Attribute search - always show when there are many attributes */}
+                                                        {attributesCache[entity.logicalName]?.length > 20 && (
                                                             <input
                                                                 type="text"
-                                                                placeholder="Buscar campo..."
-                                                                value={attributeSearch}
-                                                                onChange={(e) => setAttributeSearch(e.target.value)}
-                                                                className="w-full border border-border rounded px-2 py-1 text-xs mb-1"
+                                                                placeholder="🔍 Buscar campo..."
+                                                                value={primaryEntity === entity.logicalName ? attributeSearch : ''}
+                                                                onChange={(e) => {
+                                                                    // Set this entity as primary if searching its fields
+                                                                    if (primaryEntity !== entity.logicalName) {
+                                                                        setPrimaryEntity(entity.logicalName);
+                                                                    }
+                                                                    setAttributeSearch(e.target.value);
+                                                                }}
+                                                                className="w-full border border-border rounded px-2 py-1 text-xs mb-2 sticky top-0 bg-white"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             />
                                                         )}
                                                         {attributesCache[entity.logicalName]
-                                                            ?.filter(attr => 
-                                                                !attributeSearch ||
-                                                                attr.displayName.toLowerCase().includes(attributeSearch.toLowerCase()) ||
-                                                                attr.logicalName.toLowerCase().includes(attributeSearch.toLowerCase())
-                                                            )
-                                                            .slice(0, 100)
+                                                            ?.filter(attr => {
+                                                                // Only filter if this is the primary entity and there's a search term
+                                                                if (primaryEntity !== entity.logicalName || !attributeSearch) return true;
+                                                                return attr.displayName.toLowerCase().includes(attributeSearch.toLowerCase()) ||
+                                                                       attr.logicalName.toLowerCase().includes(attributeSearch.toLowerCase());
+                                                            })
+                                                            .slice(0, primaryEntity === entity.logicalName && attributeSearch ? 200 : 100)
                                                             .map(attr => (
                                                             <div
                                                                 key={attr.logicalName}
@@ -598,9 +605,10 @@ export default function QueryDesignerPage() {
                                                                 <span className="text-gray-400 text-[10px]">{attr.attributeType}</span>
                                                             </div>
                                                         ))}
-                                                        {attributesCache[entity.logicalName]?.length > 100 && !attributeSearch && (
-                                                            <div className="text-xs text-gray-400 px-2 py-1">
-                                                                +{attributesCache[entity.logicalName].length - 100} más (usa la búsqueda)
+                                                        {attributesCache[entity.logicalName]?.length > 100 && 
+                                                         !(primaryEntity === entity.logicalName && attributeSearch) && (
+                                                            <div className="text-xs text-blue-500 px-2 py-1 bg-blue-50 rounded mt-1">
+                                                                💡 +{attributesCache[entity.logicalName].length - 100} campos más. Usa el buscador ↑
                                                             </div>
                                                         )}
                                                     </>
