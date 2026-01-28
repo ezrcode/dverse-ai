@@ -6,6 +6,9 @@ export interface ApiError {
 }
 
 export class ApiClient {
+    // Flag to prevent multiple 401 handlers from firing simultaneously
+    private static isHandling401 = false;
+
     private static getToken(): string | null {
         if (typeof window === 'undefined') return null;
         return localStorage.getItem('accessToken');
@@ -55,6 +58,17 @@ export class ApiClient {
             } catch (_) {
                 // ignore parse errors
             }
+
+            // Handle 401 centrally - clear token to prevent redirect loops
+            if (response.status === 401 && !this.isHandling401) {
+                this.isHandling401 = true;
+                this.removeToken();
+                // Reset flag after a short delay to allow for page navigation
+                setTimeout(() => {
+                    this.isHandling401 = false;
+                }, 1000);
+            }
+
             throw error;
         }
 

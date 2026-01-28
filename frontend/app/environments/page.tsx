@@ -34,6 +34,8 @@ export default function EnvironmentsPage() {
             setConversations(convs);
         } catch (error: any) {
             if (error.statusCode === 401) {
+                // Clear invalid token to prevent redirect loop
+                ApiClient.removeToken();
                 router.push('/login');
             }
         } finally {

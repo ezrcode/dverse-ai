@@ -64,6 +64,8 @@ export default function ConversationPage() {
             }
         } catch (error: any) {
             if (error.statusCode === 401) {
+                // Clear invalid token to prevent redirect loop
+                ApiClient.removeToken();
                 router.push('/login');
             } else if (error.statusCode === 404) {
                 router.push('/');
