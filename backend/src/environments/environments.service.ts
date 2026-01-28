@@ -174,6 +174,17 @@ export class EnvironmentsService {
         return environment;
     }
 
+    /**
+     * Get all environment entities (with secrets) for a user
+     * Used for report generation
+     */
+    async findAllEntities(userId: string): Promise<Environment[]> {
+        return this.environmentRepository.find({
+            where: { userId },
+            order: { createdAt: 'DESC' },
+        });
+    }
+
     private toResponseDto(environment: Environment): EnvironmentResponseDto {
         return {
             id: environment.id,

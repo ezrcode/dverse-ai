@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { EnvironmentsModule } from './environments/environments.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ChatModule } from './chat/chat.module';
+import { ReportsModule } from './reports/reports.module';
 import { User } from './auth/user.entity';
 import { Environment } from './environments/environment.entity';
 import { Conversation } from './conversations/conversation.entity';
@@ -32,6 +33,7 @@ import { Message } from './conversations/message.entity';
     EnvironmentsModule,
     ConversationsModule,
     ChatModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,7 +10,7 @@ import { ApiClient } from '@/lib/api';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useI18n } from '@/lib/i18n';
 import type { Environment, Conversation } from '@/types';
-import { Database, Plus, Trash2, Edit, TestTube } from 'lucide-react';
+import { Database, Plus, Trash2, Edit, TestTube, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function EnvironmentsPage() {
@@ -21,6 +21,7 @@ export default function EnvironmentsPage() {
     const [loading, setLoading] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [testingId, setTestingId] = useState<string | null>(null);
+    const [generatingReport, setGeneratingReport] = useState(false);
 
     useEffect(() => {
         loadAll();
@@ -55,6 +56,42 @@ export default function EnvironmentsPage() {
             alert('Failed to test connection');
         } finally {
             setTestingId(null);
+        }
+    };
+
+    const handleGenerateReport = async () => {
+        setGeneratingReport(true);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            const token = localStorage.getItem('accessToken');
+            
+            const response = await fetch(`${API_URL}/reports/inmuebles-contacts`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate report');
+            }
+
+            // Get the blob from response
+            const blob = await response.blob();
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inmuebles-contactos-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error: any) {
+            alert(error.message || 'Error generando reporte');
+        } finally {
+            setGeneratingReport(false);
         }
     };
 
@@ -110,12 +147,23 @@ export default function EnvironmentsPage() {
                                 {t('env_subtitle')}
                             </p>
                         </div>
-                        <Link href="/environments/new">
-                            <Button variant="accent" className="gap-2">
-                                <Plus className="w-4 h-4" />
-                                {t('env_addNew')}
+                        <div className="flex gap-3">
+                            <Button 
+                                variant="outline" 
+                                className="gap-2"
+                                onClick={handleGenerateReport}
+                                disabled={generatingReport || environments.length === 0}
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                {generatingReport ? 'Generando...' : 'Reporte Excel'}
                             </Button>
-                        </Link>
+                            <Link href="/environments/new">
+                                <Button variant="accent" className="gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    {t('env_addNew')}
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
 
                     {environments.length === 0 ? (
