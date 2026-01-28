@@ -268,18 +268,34 @@ export class QueryDesignerService {
 
         console.log('[QueryDesigner] Executing query:', url);
 
-        const response = await axios.get(url, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'OData-MaxVersion': '4.0',
-                'OData-Version': '4.0',
-                Accept: 'application/json',
-                Prefer: 'odata.include-annotations="*",odata.maxpagesize=' + pageSize,
-            },
-        });
+        let response;
+        try {
+            response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'OData-MaxVersion': '4.0',
+                    'OData-Version': '4.0',
+                    Accept: 'application/json',
+                    Prefer: 'odata.include-annotations="*",odata.maxpagesize=' + pageSize,
+                },
+            });
+        } catch (error: any) {
+            console.error('[QueryDesigner] Dataverse error:', error.response?.data || error.message);
+            const dvError = error.response?.data?.error;
+            throw new HttpException(
+                dvError?.message || `Error al consultar Dataverse: ${error.message}`,
+                error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
 
         const totalCount = response.data['@odata.count'];
         const records = response.data.value || [];
+
+        console.log('[QueryDesigner] Response received:', {
+            count: totalCount,
+            recordsCount: records.length,
+            sampleRecord: records[0] ? Object.keys(records[0]) : [],
+        });
 
         // Build column definitions
         const columns = query.fields.map((f) => ({
@@ -294,16 +310,9 @@ export class QueryDesignerService {
             const row: Record<string, any> = {};
             for (const field of query.fields) {
                 const key = `${field.entityAlias}.${field.fieldName}`;
-                // Handle expanded navigation properties
-                if (field.entityAlias !== (query.primaryEntityAlias || 'main')) {
-                    const expandedData = record[field.entityAlias];
-                    row[key] = expandedData?.[field.fieldName] ?? 
-                               record[`${field.fieldName}@OData.Community.Display.V1.FormattedValue`] ??
-                               record[field.fieldName];
-                } else {
-                    row[key] = record[`${field.fieldName}@OData.Community.Display.V1.FormattedValue`] ??
-                               record[field.fieldName];
-                }
+                // Try formatted value first, then raw value
+                const formattedKey = `${field.fieldName}@OData.Community.Display.V1.FormattedValue`;
+                row[key] = record[formattedKey] ?? record[field.fieldName] ?? null;
             }
             return row;
         });
@@ -333,14 +342,28 @@ export class QueryDesignerService {
         // Always include count
         params.push('$count=true');
 
-        // Select fields
+        // Select fields - get all fields from the main entity
         const primaryAlias = query.primaryEntityAlias || 'main';
         const mainFields = query.fields
             .filter((f) => f.entityAlias === primaryAlias)
             .map((f) => f.fieldName);
         
+        console.log('[QueryDesigner] Building query:', {
+            primaryAlias,
+            allFields: query.fields,
+            mainFields,
+            joins: query.joins,
+            filters: query.filters,
+        });
+        
         if (mainFields.length > 0) {
             params.push(`$select=${mainFields.join(',')}`);
+        } else {
+            // If no fields specified for main alias, select all field names directly
+            const allFieldNames = query.fields.map((f) => f.fieldName);
+            if (allFieldNames.length > 0) {
+                params.push(`$select=${allFieldNames.join(',')}`);
+            }
         }
 
         // Expand for joins
